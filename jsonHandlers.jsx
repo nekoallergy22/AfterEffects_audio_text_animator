@@ -7,71 +7,159 @@
  * JSONデータに基づいてコンポジションの長さを設定する関数
  */
 function processJSONForCompDuration() {
+  // 処理中断フラグをリセット
+  resetCancellationFlag();
+
+  // 処理開始メッセージ
+  customAlert("コンポジション長設定処理を開始します...");
+
   var jsonContent = openJsonContents();
   if (!jsonContent) return;
 
-  var data = JSON.parse(jsonContent);
-  var projData = data.project;
-  var compData = data.comp;
-  var compNotFound = [];
+  try {
+    var data = JSON.parse(jsonContent);
+    var projData = data.project;
+    var compData = data.comp;
+    var compNotFound = [];
 
-  // メインコンポジションの合計時間を計算
-  var mainDuration = 0;
-  for (var i = 0; i < compData.length; i++) {
-    var compDuration = compData[i].duration / 1000; // ミリ秒から秒に変換
-    mainDuration += compDuration;
-  }
-
-  // メインコンポジションを検索または作成
-  var mainCompName = projData.name;
-  var mainComp = findCompByName(mainCompName);
-
-  if (mainComp === null) {
-    // メインコンポジションが存在しない場合は新規作成
-    var compWidth = 1920;
-    var compHeight = 1080;
-    var compPixelAspect = 1;
-    var compFrameRate = 24;
-
-    mainComp = createNewComp(
-      mainCompName,
-      compWidth,
-      compHeight,
-      compPixelAspect,
-      mainDuration,
-      compFrameRate
-    );
-  }
-
-  // コンポジションデータを名前順にソート
-  compData.sort(function (a, b) {
-    return b.name.localeCompare(a.name);
-  });
-
-  // 各コンポジションの長さを設定し、メインコンポジションに配置
-  for (var i = 0; i < compData.length; i++) {
-    var compId = compData[i].comp_id.toString();
-    var compDuration = compData[i].duration / 1000; // ミリ秒から秒に変換
-    var comp = findCompByName(compId);
-
-    if (comp) {
-      comp.duration = compDuration;
-      placeFileInComp(comp, mainComp);
-    } else {
-      compNotFound.push(compId);
+    // JSONデータの内容を表示
+    if (
+      !customAlert(
+        "プロジェクト名: " +
+          projData.name +
+          "\n" +
+          "コンポジション数: " +
+          compData.length,
+        "JSONデータ情報",
+        true // 中断ボタンを表示
+      )
+    ) {
+      Logger.info("ユーザーによって処理が中断されました");
+      return;
     }
-  }
 
-  // コンポジションをシーケンス状に配置
-  sequenceCompLayers(mainComp);
+    // メインコンポジションの合計時間を計算
+    var mainDuration = 0;
+    for (var i = 0; i < compData.length; i++) {
+      var compDuration = compData[i].duration / 1000; // ミリ秒から秒に変換
+      mainDuration += compDuration;
+    }
 
-  // 結果を表示
-  if (compNotFound.length > 0) {
-    alert(
-      "The following compositions were not found: " + compNotFound.join(", ")
-    );
-  } else {
-    alert("Comp Durations successfully updated for all listed comps.");
+    Logger.info("メインコンポジション合計時間: " + mainDuration + "秒");
+
+    // メインコンポジションを検索または作成
+    var mainCompName = projData.name;
+    var mainComp = findCompByName(mainCompName);
+
+    if (mainComp === null) {
+      // メインコンポジションが存在しない場合は新規作成
+      var compWidth = 1920;
+      var compHeight = 1080;
+      var compPixelAspect = 1;
+      var compFrameRate = 24;
+
+      mainComp = createNewComp(
+        mainCompName,
+        compWidth,
+        compHeight,
+        compPixelAspect,
+        mainDuration,
+        compFrameRate
+      );
+      Logger.info("メインコンポジション作成: " + mainCompName);
+    } else {
+      Logger.info("既存のメインコンポジションを使用: " + mainCompName);
+    }
+
+    if (isProcessingCancelled()) return;
+
+    // 数値でソートするヘルパー関数
+    function numericSort(a, b, prop) {
+      var aNum = parseInt(a[prop]);
+      var bNum = parseInt(b[prop]);
+      return aNum - bNum; // 昇順ソート
+    }
+
+    // コンポジションデータを数値順にソート (comp_idで昇順)
+    compData.sort(function (a, b) {
+      return numericSort(a, b, "comp_id");
+    });
+
+    Logger.info("コンポジションデータをソート完了");
+
+    if (
+      !customAlert(
+        "各コンポジションの長さを設定し、メインコンポジションに配置します。\n" +
+          "処理するコンポジション数: " +
+          compData.length,
+        "処理続行の確認",
+        true // 中断ボタンを表示
+      )
+    ) {
+      Logger.info("ユーザーによって処理が中断されました");
+      return;
+    }
+
+    // 各コンポジションの長さを設定し、メインコンポジションに配置
+    var processedComps = 0;
+    for (var i = 0; i < compData.length; i++) {
+      if (isProcessingCancelled()) return;
+
+      // 5件ごとに進捗を表示し、中断の機会を与える
+      if (i > 0 && i % 5 === 0) {
+        if (
+          !customAlert(
+            "コンポジション処理中: " + i + "/" + compData.length,
+            "処理中...",
+            true // 中断ボタンを表示
+          )
+        ) {
+          Logger.info("ユーザーによって処理が中断されました");
+          return;
+        }
+      }
+
+      var compId = compData[i].comp_id.toString();
+      var compDuration = compData[i].duration / 1000; // ミリ秒から秒に変換
+      var comp = findCompByName(compId);
+
+      if (comp) {
+        comp.duration = compDuration;
+        placeFileInComp(comp, mainComp);
+        processedComps++;
+        Logger.info(
+          "コンポジション処理: ID=" + compId + ", 長さ=" + compDuration + "秒"
+        );
+      } else {
+        compNotFound.push(compId);
+        Logger.warn("コンポジションが見つかりません: " + compId);
+      }
+    }
+
+    if (isProcessingCancelled()) return;
+
+    // コンポジションをシーケンス状に配置
+    Logger.info("コンポジションをシーケンス配置開始");
+    sequenceCompLayers(mainComp);
+    Logger.info("コンポジションをシーケンス配置完了");
+
+    // 結果を表示
+    var resultMessage = "";
+    if (compNotFound.length > 0) {
+      resultMessage =
+        "以下のコンポジションが見つかりませんでした: " +
+        compNotFound.join(", ");
+      Logger.warn(resultMessage);
+    } else {
+      resultMessage =
+        "すべてのコンポジション長さを更新しました。処理数: " + processedComps;
+      Logger.info(resultMessage);
+    }
+
+    customAlert(resultMessage, "処理完了");
+  } catch (e) {
+    Logger.error("コンポジション長設定エラー: " + e.toString());
+    customAlert("エラーが発生しました: " + e.toString(), "エラー");
   }
 }
 
@@ -79,134 +167,339 @@ function processJSONForCompDuration() {
  * JSONデータに基づいてオーディオファイルをコンポジションに配置する関数
  */
 function processJSONForAudioImport() {
-  alert("オーディオインポート処理を開始します...");
+  // 処理中断フラグをリセット
+  resetCancellationFlag();
+
+  // 処理開始メッセージ
+  customAlert("オーディオインポート処理を開始します...");
 
   var jsonContent = openJsonContents();
   if (!jsonContent) return;
 
-  var data = JSON.parse(jsonContent);
-  var audioData = data.audio;
-  var compData = data.comp;
-  var fileNotFound = [];
-  var compNotFound = [];
+  try {
+    var data = JSON.parse(jsonContent);
+    var audioData = data.audio;
+    var compData = data.comp;
+    var fileNotFound = [];
+    var compNotFound = [];
 
-  // デバッグ: JSONデータの内容を表示
-  alert(
-    "コンポジション数: " +
-      compData.length +
-      "\nオーディオファイル数: " +
-      audioData.length
-  );
+    // デバッグ: JSONデータの内容を表示
+    if (
+      !customAlert(
+        "コンポジション数: " +
+          compData.length +
+          "\nオーディオファイル数: " +
+          audioData.length,
+        "JSONデータ情報",
+        true // 中断ボタンを表示
+      )
+    ) {
+      Logger.info("ユーザーによって処理が中断されました");
+      return; // ユーザーが中断を選択した場合
+    }
 
-  // 数値でソートするヘルパー関数
-  function numericSort(a, b, prop) {
-    var aNum = parseInt(a[prop]);
-    var bNum = parseInt(b[prop]);
-    return aNum - bNum; // 昇順ソート
-  }
+    // 数値でソートするヘルパー関数
+    function numericSort(a, b, prop) {
+      var aNum = parseInt(a[prop]);
+      var bNum = parseInt(b[prop]);
+      return aNum - bNum; // 昇順ソート
+    }
 
-  // コンポジションデータを数値順にソート (comp_idで昇順)
-  compData.sort(function (a, b) {
-    return numericSort(a, b, "comp_id");
-  });
+    // コンポジションデータを数値順にソート (comp_idで昇順)
+    compData.sort(function (a, b) {
+      return numericSort(a, b, "comp_id");
+    });
 
-  // オーディオデータをcomp_idで昇順ソート
-  audioData.sort(function (a, b) {
-    return numericSort(a, b, "comp_id");
-  });
+    // オーディオデータをcomp_idで昇順ソート
+    audioData.sort(function (a, b) {
+      return numericSort(a, b, "comp_id");
+    });
 
-  // デバッグ: ソート後のコンポジションIDを表示
-  var compIds = compData
-    .map(function (comp) {
-      return comp.comp_id;
-    })
-    .join(", ");
-  alert("ソート後のコンポジションID: " + compIds);
+    Logger.info("データをソート完了");
 
-  // オーディオファイルをコンポジションに配置
-  var audioPlacedCount = 0;
-  for (var i = 0; i < audioData.length; i++) {
-    var audioName = audioData[i].name.substring(0, 4);
-    var compId = audioData[i].comp_id.toString();
-    var audioFile = findFileInProject(audioName);
-    var targetComp = findCompByName(compId);
+    // デバッグ: ソート後のコンポジションIDを表示
+    var compIds = compData
+      .map(function (comp) {
+        return comp.comp_id;
+      })
+      .join(", ");
 
-    if (audioFile && targetComp) {
-      placeFileInComp(audioFile, targetComp);
-      audioPlacedCount++;
-    } else {
-      if (!audioFile) {
-        fileNotFound.push(audioName);
+    if (isProcessingCancelled()) return;
+
+    // オーディオファイルをコンポジションに配置
+    var audioPlacedCount = 0;
+    for (var i = 0; i < audioData.length; i++) {
+      // 10件ごとに進捗を表示し、中断の機会を与える
+      if (i > 0 && i % 10 === 0) {
+        if (
+          !customAlert(
+            "オーディオファイル配置中: " + i + "/" + audioData.length,
+            "処理中...",
+            true // 中断ボタンを表示
+          )
+        ) {
+          Logger.info("ユーザーによって処理が中断されました");
+          return; // ユーザーが中断を選択した場合
+        }
       }
-      if (!targetComp) {
-        compNotFound.push(compId);
+
+      if (isProcessingCancelled()) return;
+
+      var audioName = audioData[i].name.substring(0, 4);
+      var compId = audioData[i].comp_id.toString();
+      var audioFile = findFileInProject(audioName);
+      var targetComp = findCompByName(compId);
+
+      if (audioFile && targetComp) {
+        placeFileInComp(audioFile, targetComp);
+        audioPlacedCount++;
+        Logger.info(
+          "オーディオ配置: " + audioName + " → コンポジション " + compId
+        );
+      } else {
+        if (!audioFile) {
+          fileNotFound.push(audioName);
+          Logger.warn("オーディオファイルが見つかりません: " + audioName);
+        }
+        if (!targetComp) {
+          compNotFound.push(compId);
+          Logger.warn("コンポジションが見つかりません: " + compId);
+        }
       }
     }
-  }
 
-  alert("配置されたオーディオファイル数: " + audioPlacedCount);
+    if (isProcessingCancelled()) return;
+
+    customAlert("配置されたオーディオファイル数: " + audioPlacedCount);
+    Logger.info("オーディオファイル配置完了: " + audioPlacedCount + "件");
+  } catch (e) {
+    Logger.error("JSONデータ処理エラー: " + e.toString());
+    customAlert("エラーが発生しました: " + e.toString(), "エラー");
+    return;
+  }
 
   // 各コンポジションを処理
-  var numCompData = compData.length;
-  var processedComps = 0;
-  var textLayersAdded = 0;
+  try {
+    var numCompData = compData.length;
+    var processedComps = 0;
+    var textLayersAdded = 0;
 
-  for (var i = 0; i < numCompData; i++) {
-    // 重要な修正: nameではなくcomp_idを使用
-    var compId = compData[i].comp_id.toString();
-    var targetComp = findCompByName(compId);
+    // 処理を続行するか確認
+    if (
+      !customAlert(
+        "オーディオシーケンス配置とテキスト挿入を開始します。\n" +
+          "処理するコンポジション数: " +
+          numCompData,
+        "処理続行の確認",
+        true // 中断ボタンを表示
+      )
+    ) {
+      Logger.info("ユーザーによって処理が中断されました");
+      return;
+    }
 
-    if (targetComp) {
-      processedComps++;
+    // オーディオシーケンス配置
+    Logger.info("オーディオシーケンス配置開始");
+    for (var i = 0; i < numCompData; i++) {
+      if (isProcessingCancelled()) return;
 
-      // デバッグ: 処理中のコンポジション情報
-      var audioLayerCount = countAudioLayers(targetComp);
-      alert(
-        "処理中: [ " +
-          targetComp.name +
-          " ] (" +
-          (i + 1) +
-          "/" +
-          numCompData +
-          ") - オーディオレイヤー数: " +
-          audioLayerCount
-      );
+      // 4件ごとに進捗を表示し、中断の機会を与える
+      if (i > 0 && i % 4 === 0) {
+        if (
+          !customAlert(
+            "オーディオシーケンス配置中: " + i + "/" + numCompData,
+            "処理中...",
+            true // 中断ボタンを表示
+          )
+        ) {
+          Logger.info("ユーザーによって処理が中断されました");
+          return;
+        }
+      }
 
-      try {
+      var compId = compData[i].comp_id.toString();
+      var targetComp = findCompByName(compId);
+
+      if (targetComp) {
         // オーディオレイヤーをシーケンス状に配置
         sequenceAudioLayers(targetComp);
-
-        // テキストを配置
-        var addedLayers = insertTextForAllAudioLayers(targetComp, 960, 1040);
-        textLayersAdded += addedLayers;
-
-        // アイテムにアニメーションを適用
-        applyAnimationsToAllItems(targetComp);
-      } catch (e) {
-        alert("エラー発生 (コンポ " + compId + "): " + e.toString());
+        Logger.info("オーディオシーケンス配置: コンポジション " + compId);
       }
     }
-  }
 
-  alert(
-    "処理されたコンポジション数: " +
+    if (isProcessingCancelled()) return;
+
+    // 処理を続行するか確認
+    if (
+      !customAlert(
+        "オーディオシーケンス配置が完了しました。\nテキスト挿入を開始します。",
+        "処理続行の確認",
+        true // 中断ボタンを表示
+      )
+    ) {
+      Logger.info("ユーザーによって処理が中断されました");
+      return;
+    }
+
+    // テキスト挿入
+    Logger.info("テキスト挿入開始");
+    for (var i = 0; i < numCompData; i++) {
+      if (isProcessingCancelled()) return;
+
+      // 重要な修正: nameではなくcomp_idを使用
+      var compId = compData[i].comp_id.toString();
+      var targetComp = findCompByName(compId);
+
+      if (targetComp) {
+        processedComps++;
+
+        // デバッグ: 処理中のコンポジション情報
+        var audioLayerCount = countAudioLayers(targetComp);
+        Logger.info(
+          "テキスト挿入: コンポジション " +
+            compId +
+            " (オーディオレイヤー数: " +
+            audioLayerCount +
+            ")"
+        );
+
+        // 進捗を表示し、中断の機会を与える
+        if (
+          !customAlert(
+            "テキスト挿入中: [ " +
+              targetComp.name +
+              " ] (" +
+              (i + 1) +
+              "/" +
+              numCompData +
+              ")\n" +
+              "オーディオレイヤー数: " +
+              audioLayerCount,
+            "処理中...",
+            true // 中断ボタンを表示
+          )
+        ) {
+          Logger.info("ユーザーによって処理が中断されました");
+          return;
+        }
+
+        try {
+          if (audioLayerCount > 0) {
+            // テキストを配置
+            var addedLayers = insertTextForAllAudioLayers(
+              targetComp,
+              960,
+              1040
+            );
+            textLayersAdded += addedLayers;
+            Logger.info(
+              "テキスト挿入完了: コンポジション " +
+                compId +
+                " (追加されたテキストレイヤー数: " +
+                addedLayers +
+                ")"
+            );
+          } else {
+            Logger.warn(
+              "コンポジション " + compId + " にはオーディオレイヤーがありません"
+            );
+          }
+        } catch (e) {
+          Logger.error(
+            "テキスト挿入エラー (コンポ " + compId + "): " + e.toString()
+          );
+          customAlert(
+            "エラー発生 (コンポ " + compId + "): " + e.toString(),
+            "エラー"
+          );
+        }
+      }
+    }
+
+    if (isProcessingCancelled()) return;
+
+    // 処理を続行するか確認
+    if (
+      !customAlert(
+        "テキスト挿入が完了しました。\nアニメーション適用を開始します。",
+        "処理続行の確認",
+        true // 中断ボタンを表示
+      )
+    ) {
+      Logger.info("ユーザーによって処理が中断されました");
+      return;
+    }
+
+    // アニメーション適用
+    Logger.info("アニメーション適用開始");
+    for (var i = 0; i < numCompData; i++) {
+      if (isProcessingCancelled()) return;
+
+      // 4件ごとに進捗を表示し、中断の機会を与える
+      if (i > 0 && i % 4 === 0) {
+        if (
+          !customAlert(
+            "アニメーション適用中: " + i + "/" + numCompData,
+            "処理中...",
+            true // 中断ボタンを表示
+          )
+        ) {
+          Logger.info("ユーザーによって処理が中断されました");
+          return;
+        }
+      }
+
+      var compId = compData[i].comp_id.toString();
+      var targetComp = findCompByName(compId);
+
+      if (targetComp) {
+        try {
+          // アイテムにアニメーションを適用
+          applyAnimationsToAllItems(targetComp);
+          Logger.info("アニメーション適用: コンポジション " + compId);
+        } catch (e) {
+          Logger.error(
+            "アニメーション適用エラー (コンポ " + compId + "): " + e.toString()
+          );
+          customAlert(
+            "エラー発生 (コンポ " + compId + "): " + e.toString(),
+            "エラー"
+          );
+        }
+      }
+    }
+
+    // 最終結果を表示
+    var resultMessage =
+      "処理が完了しました。\n\n" +
+      "処理されたコンポジション数: " +
       processedComps +
-      "\n追加されたテキストレイヤー数: " +
-      textLayersAdded
-  );
+      "\n" +
+      "追加されたテキストレイヤー数: " +
+      textLayersAdded;
 
-  // 結果を表示
-  if (fileNotFound.length > 0 || compNotFound.length > 0) {
-    alert(
-      "エラーが発生しました:\n" +
-        "見つからないファイル: " +
-        fileNotFound.join(", ") +
-        "\n" +
-        "見つからないコンポジション: " +
-        compNotFound.join(", ")
+    if (fileNotFound.length > 0 || compNotFound.length > 0) {
+      resultMessage += "\n\nエラーが発生しました:\n";
+      if (fileNotFound.length > 0) {
+        resultMessage +=
+          "見つからないファイル: " + fileNotFound.join(", ") + "\n";
+      }
+      if (compNotFound.length > 0) {
+        resultMessage +=
+          "見つからないコンポジション: " + compNotFound.join(", ");
+      }
+    }
+
+    Logger.info(
+      "処理完了: コンポジション数=" +
+        processedComps +
+        ", テキストレイヤー数=" +
+        textLayersAdded
     );
-  } else {
-    alert("オーディオファイルが正常にインポートされました。");
+    customAlert(resultMessage, "処理完了");
+  } catch (e) {
+    Logger.error("処理エラー: " + e.toString());
+    customAlert("処理中にエラーが発生しました: " + e.toString(), "エラー");
   }
 }
 

@@ -3,6 +3,81 @@
  * デバッグ情報をログファイルに記録する機能を提供します
  */
 
+// 処理中断フラグ
+var isProcessCancelled = false;
+
+/**
+ * カスタムアラートダイアログを表示する関数
+ * @param {string} message - 表示するメッセージ
+ * @param {string} title - ダイアログのタイトル（省略可）
+ * @param {boolean} allowCancel - キャンセルボタンを表示するかどうか
+ * @return {boolean} OKボタンが押された場合はtrue、キャンセルボタンが押された場合はfalse
+ */
+function customAlert(message, title, allowCancel) {
+  title = title || "After Effects Audio Text Animator";
+  allowCancel = allowCancel === undefined ? false : allowCancel;
+
+  var dialog = new Window("dialog", title);
+  dialog.orientation = "column";
+  dialog.alignChildren = ["center", "top"];
+  dialog.spacing = 10;
+  dialog.margins = 16;
+
+  // メッセージテキスト
+  var messageText = dialog.add("statictext", undefined, message, {
+    multiline: true,
+  });
+  messageText.alignment = ["fill", "top"];
+  messageText.preferredSize.width = 300;
+
+  // ボタングループ
+  var buttonGroup = dialog.add("group", undefined);
+  buttonGroup.orientation = "row";
+  buttonGroup.alignChildren = ["center", "center"];
+  buttonGroup.spacing = 10;
+
+  var okButton = buttonGroup.add("button", undefined, "OK");
+  okButton.preferredSize.width = 80;
+
+  var cancelButton = null;
+  if (allowCancel) {
+    cancelButton = buttonGroup.add("button", undefined, "中断");
+    cancelButton.preferredSize.width = 80;
+  }
+
+  var result = true;
+
+  okButton.onClick = function () {
+    dialog.close();
+  };
+
+  if (allowCancel) {
+    cancelButton.onClick = function () {
+      result = false;
+      isProcessCancelled = true;
+      dialog.close();
+    };
+  }
+
+  dialog.show();
+  return result;
+}
+
+/**
+ * 処理が中断されたかどうかを確認する関数
+ * @return {boolean} 処理が中断された場合はtrue
+ */
+function isProcessingCancelled() {
+  return isProcessCancelled;
+}
+
+/**
+ * 処理中断フラグをリセットする関数
+ */
+function resetCancellationFlag() {
+  isProcessCancelled = false;
+}
+
 var Logger = (function () {
   // プライベート変数
   var logFile = null;
@@ -36,11 +111,11 @@ var Logger = (function () {
         logFile.close();
         return true;
       } else {
-        alert("ログファイルを作成できませんでした。");
+        customAlert("ログファイルを作成できませんでした。");
         return false;
       }
     } catch (e) {
-      alert("ログ初期化エラー: " + e.toString());
+      customAlert("ログ初期化エラー: " + e.toString());
       return false;
     }
   }
@@ -82,7 +157,7 @@ var Logger = (function () {
       }
     } catch (e) {
       // ログ書き込みエラーの場合はアラートを表示
-      alert("ログ書き込みエラー: " + e.toString());
+      customAlert("ログ書き込みエラー: " + e.toString());
     }
   }
 

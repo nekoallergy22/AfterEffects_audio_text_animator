@@ -9,12 +9,39 @@
  * @return {Array} RGB値の配列
  */
 function colorSetToRgb(hexColor) {
-  // この関数は元のコードには含まれていませんでしたが、
-  // setTextProperties関数で使用されているため、実装が必要です
-  var r = parseInt(hexColor.substr(0, 2), 16) / 255;
-  var g = parseInt(hexColor.substr(2, 2), 16) / 255;
-  var b = parseInt(hexColor.substr(4, 2), 16) / 255;
-  return [r, g, b, 1]; // RGBA形式で返す
+  try {
+    Logger.debug("カラー変換開始: " + hexColor);
+
+    // 16進数の形式チェック
+    if (!hexColor || hexColor.length < 6) {
+      Logger.warn(
+        "無効なカラーコード: " + hexColor + " - デフォルト値を使用します"
+      );
+      // デフォルト値（グレー）を返す
+      return [0.5, 0.5, 0.5, 1];
+    }
+
+    // 先頭の#を削除（もしあれば）
+    if (hexColor.charAt(0) === "#") {
+      hexColor = hexColor.substr(1);
+    }
+
+    var r = parseInt(hexColor.substr(0, 2), 16) / 255;
+    var g = parseInt(hexColor.substr(2, 2), 16) / 255;
+    var b = parseInt(hexColor.substr(4, 2), 16) / 255;
+
+    // NaNチェック
+    if (isNaN(r) || isNaN(g) || isNaN(b)) {
+      Logger.warn("カラー変換エラー: 無効な16進数 - デフォルト値を使用します");
+      return [0.5, 0.5, 0.5, 1]; // デフォルト値（グレー）
+    }
+
+    Logger.debug("カラー変換成功: [" + r + ", " + g + ", " + b + ", 1]");
+    return [r, g, b, 1]; // RGBA形式で返す
+  } catch (e) {
+    Logger.error("カラー変換エラー: " + e.toString());
+    return [0.5, 0.5, 0.5, 1]; // エラー時はデフォルト値（グレー）
+  }
 }
 
 /**
