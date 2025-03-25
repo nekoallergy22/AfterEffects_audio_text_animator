@@ -31,8 +31,33 @@ if [ ! -f "$CURRENT_DIR/myUI.jsx" ]; then
   exit 1
 fi
 
-# ファイルをコピー
+# アーカイブディレクトリの作成
+ARCHIVE_DIR="$AE_SCRIPTS_DIR/_archives"
+if [ ! -d "$ARCHIVE_DIR" ]; then
+  echo "アーカイブディレクトリを作成しています..."
+  mkdir -p "$ARCHIVE_DIR"
+  if [ $? -ne 0 ]; then
+    echo "エラー: アーカイブディレクトリの作成に失敗しました。"
+    echo "権限の問題がある場合は、sudo を使用して実行してください: sudo ./install.sh"
+    exit 1
+  fi
+fi
+
+# 現在の日時を取得（ファイル名用）
+TIMESTAMP=$(date +"%Y%m%d_%H%M")
+
+# components.jsx をコピー
 echo "components.jsx を After Effects スクリプトフォルダにコピーしています..."
+if [ -f "$AE_SCRIPTS_DIR/components.jsx" ]; then
+  echo "既存の components.jsx ファイルをアーカイブしています..."
+  mv "$AE_SCRIPTS_DIR/components.jsx" "$ARCHIVE_DIR/components_${TIMESTAMP}.jsx"
+  if [ $? -ne 0 ]; then
+    echo "エラー: 既存の components.jsx ファイルのアーカイブに失敗しました。"
+    echo "権限の問題がある場合は、sudo を使用して実行してください: sudo ./install.sh"
+    exit 1
+  fi
+fi
+
 cp "$CURRENT_DIR/components.jsx" "$AE_SCRIPTS_DIR/"
 if [ $? -ne 0 ]; then
   echo "エラー: components.jsx のコピーに失敗しました。"
@@ -40,7 +65,18 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
+# myUI.jsx をコピー
 echo "myUI.jsx を After Effects スクリプトフォルダにコピーしています..."
+if [ -f "$AE_SCRIPTS_DIR/myUI.jsx" ]; then
+  echo "既存の myUI.jsx ファイルをアーカイブしています..."
+  mv "$AE_SCRIPTS_DIR/myUI.jsx" "$ARCHIVE_DIR/myUI_${TIMESTAMP}.jsx"
+  if [ $? -ne 0 ]; then
+    echo "エラー: 既存の myUI.jsx ファイルのアーカイブに失敗しました。"
+    echo "権限の問題がある場合は、sudo を使用して実行してください: sudo ./install.sh"
+    exit 1
+  fi
+fi
+
 cp "$CURRENT_DIR/myUI.jsx" "$AE_SCRIPTS_DIR/"
 if [ $? -ne 0 ]; then
   echo "エラー: myUI.jsx のコピーに失敗しました。"
