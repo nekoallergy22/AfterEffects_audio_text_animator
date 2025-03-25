@@ -107,19 +107,19 @@ var Logger = (function () {
         var prefix = "";
         switch (level) {
           case 0:
-            prefix = "[エラー] ";
+            prefix = "[ERROR] ";
             break;
           case 1:
-            prefix = "[警告] ";
+            prefix = "[WARN] ";
             break;
           case 2:
-            prefix = "[情報] ";
+            prefix = "[INFO] ";
             break;
           case 3:
-            prefix = "[デバッグ] ";
+            prefix = "[DEBUG] ";
             break;
           default:
-            prefix = "[ログ] ";
+            prefix = "[LOG] ";
         }
 
         var now = new Date();

@@ -10,12 +10,51 @@
 function sequenceCompLayers(comp) {
   app.beginUndoGroup("Sequence Comp Layers");
 
-  var startTime = 0;
+  // レイヤーを名前で数値的にソート（1, 2, 3, ..., 10, 11, 12のように）
+  var layers = [];
+  for (var i = 1; i <= comp.numLayers; i++) {
+    layers.push(comp.layer(i));
+  }
 
-  for (var j = 0; j < comp.numLayers; j++) {
-    var layer = comp.layer(j + 1);
+  // 数値的にソート（コンポ名が数字の場合）
+  layers.sort(function (a, b) {
+    // 数値に変換できる場合は数値としてソート
+    var aNum = parseInt(a.name);
+    var bNum = parseInt(b.name);
+
+    if (!isNaN(aNum) && !isNaN(bNum)) {
+      return aNum - bNum; // 昇順ソート
+    }
+
+    // 数値に変換できない場合は文字列としてソート
+    return a.name.localeCompare(b.name);
+  });
+
+  // レイヤー名のリストを作成（mapを使わない）
+  var layerNames = "";
+  for (var i = 0; i < layers.length; i++) {
+    if (i > 0) {
+      layerNames += ", ";
+    }
+    layerNames += layers[i].name;
+  }
+
+  Logger.info("コンポジションレイヤーをソート: " + layerNames);
+
+  // ソートされたレイヤーをシーケンス状に配置
+  var startTime = 0;
+  for (var j = 0; j < layers.length; j++) {
+    var layer = layers[j];
     layer.startTime = startTime;
     startTime = layer.outPoint;
+    Logger.debug(
+      "レイヤー配置: " +
+        layer.name +
+        ", 開始時間: " +
+        layer.startTime +
+        ", 終了時間: " +
+        layer.outPoint
+    );
   }
 
   app.endUndoGroup();
@@ -71,17 +110,23 @@ function setLayerAnchorPointToCenter(layer) {
 /**
  * コンポジション内のすべてのアイテムにアニメーションを付与する関数
  * @param {CompItem} comp - 対象のコンポジション
+ * @param {boolean} showAlerts - アラートを表示するかどうか
  */
-function applyAnimationsToAllItems(comp) {
+function applyAnimationsToAllItems(comp, showAlerts) {
+  // デフォルト値の設定
+  showAlerts = showAlerts === undefined ? false : showAlerts;
+
   if (comp != null && comp instanceof CompItem) {
     applyScaleAnimation(comp, "Emoji");
     applyScaleAnimation(comp, "rafiki");
     applyScaleAnimation(comp, "icon");
     applyScaleAnimation(comp, "item");
     applyTrimPathsAnimation(comp, "line");
-    applyOpacityAnimationToTextLayers(comp);
+    applyOpacityAnimationToTextLayers(comp, showAlerts);
   } else {
-    alert("コンポジションが選択されていません。");
+    var errorMessage = "コンポジションが選択されていません。";
+    Logger.error(errorMessage);
+    customAlert(errorMessage, "エラー"); // エラー時は常にアラート表示
   }
 }
 
@@ -151,12 +196,23 @@ function applyTrimPathsAnimation(comp, text) {
 /**
  * テキストレイヤーにフェードインアニメーションを適用する関数
  * @param {CompItem} comp - 対象のコンポジション
+ * @param {boolean} showAlerts - アラートを表示するかどうか
  */
-function applyOpacityAnimationToTextLayers(comp) {
-  // デバッグ: 関数開始
-  alert(
+function applyOpacityAnimationToTextLayers(comp, showAlerts) {
+  // デフォルト値の設定
+  showAlerts = showAlerts === undefined ? false : showAlerts;
+
+  // ログ出力
+  Logger.info(
     "テキストレイヤーにアニメーション適用開始: コンポジション " + comp.name
   );
+
+  // アラート表示（ステップモードのみ）
+  if (showAlerts) {
+    customAlert(
+      "テキストレイヤーにアニメーション適用開始: コンポジション " + comp.name
+    );
+  }
 
   var layers = comp.layers;
   var animatedLayerCount = 0;
@@ -177,10 +233,20 @@ function applyOpacityAnimationToTextLayers(comp) {
         animatedLayerCount++;
       }
     } catch (e) {
-      alert("テキストアニメーション適用エラー: " + e.toString());
+      var errorMessage = "テキストアニメーション適用エラー: " + e.toString();
+      Logger.error(errorMessage);
+      customAlert(errorMessage, "エラー"); // エラー時は常にアラート表示
     }
   }
 
-  // デバッグ: アニメーション適用結果
-  alert("アニメーションを適用したテキストレイヤー数: " + animatedLayerCount);
+  Logger.info(
+    "アニメーションを適用したテキストレイヤー数: " + animatedLayerCount
+  );
+
+  // アラート表示（ステップモードのみ）
+  if (showAlerts) {
+    customAlert(
+      "アニメーションを適用したテキストレイヤー数: " + animatedLayerCount
+    );
+  }
 }

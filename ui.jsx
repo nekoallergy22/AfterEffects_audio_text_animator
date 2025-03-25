@@ -283,8 +283,8 @@ function buildUI(thisObj) {
 
           if (targetComp) {
             try {
-              // アイテムにアニメーションを適用
-              applyAnimationsToAllItems(targetComp);
+              // アイテムにアニメーションを適用（アラート表示なし）
+              applyAnimationsToAllItems(targetComp, false);
               Logger.info("アニメーション適用: コンポジション " + compId);
             } catch (e) {
               Logger.error(
