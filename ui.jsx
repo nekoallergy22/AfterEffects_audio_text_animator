@@ -4,62 +4,61 @@
  */
 
 // 必要なモジュールを読み込み
-$.evalFile(File($.fileName).path + "/utils.jsx");
-$.evalFile(File($.fileName).path + "/animations.jsx");
-$.evalFile(File($.fileName).path + "/textHandlers.jsx");
-$.evalFile(File($.fileName).path + "/jsonHandlers.jsx");
+var scriptFolder = new File($.fileName).parent.absoluteURI;
+$.evalFile(scriptFolder + "/utils.jsx");
+$.evalFile(scriptFolder + "/animations.jsx");
+$.evalFile(scriptFolder + "/textHandlers.jsx");
+$.evalFile(scriptFolder + "/jsonHandlers.jsx");
 
-/**
- * UIを作成する関数
- * @param {Object} thisObj - スクリプトのコンテキスト
- * @return {Panel|Window} 作成されたパネルまたはウィンドウ
- */
-function createUI(thisObj) {
-  var myPanel =
+// ScriptUI Panels用のエントリーポイント
+function buildUI(thisObj) {
+  var panel =
     thisObj instanceof Panel
       ? thisObj
       : new Window("palette", "After Effects Audio Text Animator", undefined, {
           resizeable: true,
         });
 
+  // パネルのサイズを設定
+  panel.preferredSize = [300, 100];
+
   // スクリプト1のボタンを追加
-  var buttonSetCompDuration = myPanel.add(
+  var buttonSetCompDuration = panel.add(
     "button",
     undefined,
     "コンポジション長設定"
   );
+  buttonSetCompDuration.size = [280, 30];
+  buttonSetCompDuration.alignment = ["center", "top"];
   buttonSetCompDuration.onClick = processJSONForCompDuration;
 
   // スクリプト2のボタンを追加
-  var buttonImportAudio = myPanel.add(
+  var buttonImportAudio = panel.add(
     "button",
     undefined,
     "オーディオインポート"
   );
+  buttonImportAudio.size = [280, 30];
+  buttonImportAudio.alignment = ["center", "top"];
   buttonImportAudio.onClick = processJSONForAudioImport;
 
-  // レイアウトを調整
-  myPanel.layout.layout(true);
-  return myPanel;
-}
+  // パネルのレイアウトを調整
+  panel.layout.layout(true);
+  panel.layout.resize();
 
-/**
- * スクリプトのメイン実行部分
- */
-function main() {
-  // After Effectsのバージョンチェック
-  if (parseFloat(app.version) < 8) {
-    alert("このスクリプトはAfter Effects CS3以降が必要です。");
-    return;
+  // パネルがドッキング可能なパネルの場合はリサイズ
+  if (panel instanceof Window) {
+    panel.center();
+    panel.show();
   }
 
-  // UIを作成して表示
-  var myScriptPal = createUI(this);
-  if (myScriptPal instanceof Window) {
-    myScriptPal.center();
-    myScriptPal.show();
-  }
+  return panel;
 }
 
-// スクリプトを実行
-main();
+// After Effectsのバージョンチェック
+if (parseFloat(app.version) < 8) {
+  alert("このスクリプトはAfter Effects CS3以降が必要です。");
+} else {
+  // UIを構築
+  var myPanel = buildUI(this);
+}
