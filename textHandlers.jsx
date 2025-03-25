@@ -8,11 +8,20 @@
  * @param {CompItem} comp - 対象のコンポジション
  * @param {number} xPos - X座標
  * @param {number} yPos - Y座標
+ * @param {boolean} showAlerts - アラートを表示するかどうか
  * @return {number} 挿入されたテキストレイヤーの数
  */
-function insertTextForAllAudioLayers(comp, xPos, yPos) {
-  // デバッグ: 関数開始
-  alert("テキスト挿入開始: コンポジション " + comp.name);
+function insertTextForAllAudioLayers(comp, xPos, yPos, showAlerts) {
+  // デフォルト値の設定
+  showAlerts = showAlerts === undefined ? false : showAlerts;
+
+  // ログ出力
+  Logger.info("テキスト挿入開始: コンポジション " + comp.name);
+
+  // アラート表示（ステップモードのみ）
+  if (showAlerts) {
+    customAlert("テキスト挿入開始: コンポジション " + comp.name);
+  }
 
   var layers = comp.layers;
   var numLayers = layers.length;
@@ -27,8 +36,12 @@ function insertTextForAllAudioLayers(comp, xPos, yPos) {
     }
   }
 
-  // デバッグ: 検出されたオーディオレイヤー数
-  alert("検出されたオーディオレイヤー数: " + audioLayers.length);
+  Logger.info("検出されたオーディオレイヤー数: " + audioLayers.length);
+
+  // アラート表示（ステップモードのみ）
+  if (showAlerts) {
+    customAlert("検出されたオーディオレイヤー数: " + audioLayers.length);
+  }
 
   // 各オーディオレイヤーに対してテキストを挿入
   for (var i = audioLayers.length - 1; i >= 0; i--) {
@@ -39,8 +52,7 @@ function insertTextForAllAudioLayers(comp, xPos, yPos) {
         outPoint: layer.outPoint,
       };
 
-      // デバッグ: 処理中のオーディオレイヤー
-      alert(
+      Logger.debug(
         "テキスト挿入中: レイヤー " +
           layer.name +
           " (" +
@@ -63,12 +75,18 @@ function insertTextForAllAudioLayers(comp, xPos, yPos) {
         textLayersAdded++;
       }
     } catch (e) {
-      alert("テキスト挿入エラー: " + e.toString());
+      var errorMessage = "テキスト挿入エラー: " + e.toString();
+      Logger.error(errorMessage);
+      customAlert(errorMessage, "エラー"); // エラー時は常にアラート表示
     }
   }
 
-  // デバッグ: 挿入されたテキストレイヤー数
-  alert("挿入されたテキストレイヤー数: " + textLayersAdded);
+  Logger.info("挿入されたテキストレイヤー数: " + textLayersAdded);
+
+  // アラート表示（ステップモードのみ）
+  if (showAlerts) {
+    customAlert("挿入されたテキストレイヤー数: " + textLayersAdded);
+  }
 
   return textLayersAdded;
 }
