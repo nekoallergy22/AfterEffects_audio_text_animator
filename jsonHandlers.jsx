@@ -90,17 +90,41 @@ function processJSONForAudioImport() {
   var fileNotFound = [];
   var compNotFound = [];
 
-  // コンポジションデータを名前順にソート
+  // デバッグ: JSONデータの内容を表示
+  alert(
+    "コンポジション数: " +
+      compData.length +
+      "\nオーディオファイル数: " +
+      audioData.length
+  );
+
+  // 数値でソートするヘルパー関数
+  function numericSort(a, b, prop) {
+    var aNum = parseInt(a[prop]);
+    var bNum = parseInt(b[prop]);
+    return aNum - bNum; // 昇順ソート
+  }
+
+  // コンポジションデータを数値順にソート (comp_idで昇順)
   compData.sort(function (a, b) {
-    return b.name.localeCompare(a.name);
+    return numericSort(a, b, "comp_id");
   });
 
-  // オーディオデータを名前順にソート
+  // オーディオデータをcomp_idで昇順ソート
   audioData.sort(function (a, b) {
-    return b.name.localeCompare(a.name);
+    return numericSort(a, b, "comp_id");
   });
+
+  // デバッグ: ソート後のコンポジションIDを表示
+  var compIds = compData
+    .map(function (comp) {
+      return comp.comp_id;
+    })
+    .join(", ");
+  alert("ソート後のコンポジションID: " + compIds);
 
   // オーディオファイルをコンポジションに配置
+  var audioPlacedCount = 0;
   for (var i = 0; i < audioData.length; i++) {
     var audioName = audioData[i].name.substring(0, 4);
     var compId = audioData[i].comp_id.toString();
@@ -109,6 +133,7 @@ function processJSONForAudioImport() {
 
     if (audioFile && targetComp) {
       placeFileInComp(audioFile, targetComp);
+      audioPlacedCount++;
     } else {
       if (!audioFile) {
         fileNotFound.push(audioName);
@@ -119,33 +144,56 @@ function processJSONForAudioImport() {
     }
   }
 
+  alert("配置されたオーディオファイル数: " + audioPlacedCount);
+
   // 各コンポジションを処理
   var numCompData = compData.length;
+  var processedComps = 0;
+  var textLayersAdded = 0;
+
   for (var i = 0; i < numCompData; i++) {
-    var compId = compData[i].name;
+    // 重要な修正: nameではなくcomp_idを使用
+    var compId = compData[i].comp_id.toString();
     var targetComp = findCompByName(compId);
 
     if (targetComp) {
+      processedComps++;
+
+      // デバッグ: 処理中のコンポジション情報
+      var audioLayerCount = countAudioLayers(targetComp);
       alert(
         "処理中: [ " +
           targetComp.name +
-          " ] 完了! (" +
+          " ] (" +
           (i + 1) +
           "/" +
           numCompData +
-          ")"
+          ") - オーディオレイヤー数: " +
+          audioLayerCount
       );
 
-      // オーディオレイヤーをシーケンス状に配置
-      sequenceAudioLayers(targetComp);
+      try {
+        // オーディオレイヤーをシーケンス状に配置
+        sequenceAudioLayers(targetComp);
 
-      // アイテムにアニメーションを適用
-      applyAnimationsToAllItems(targetComp);
+        // テキストを配置
+        var addedLayers = insertTextForAllAudioLayers(targetComp, 960, 1040);
+        textLayersAdded += addedLayers;
 
-      // テキストを配置
-      insertTextForAllAudioLayers(targetComp, 960, 1040);
+        // アイテムにアニメーションを適用
+        applyAnimationsToAllItems(targetComp);
+      } catch (e) {
+        alert("エラー発生 (コンポ " + compId + "): " + e.toString());
+      }
     }
   }
+
+  alert(
+    "処理されたコンポジション数: " +
+      processedComps +
+      "\n追加されたテキストレイヤー数: " +
+      textLayersAdded
+  );
 
   // 結果を表示
   if (fileNotFound.length > 0 || compNotFound.length > 0) {
@@ -160,4 +208,19 @@ function processJSONForAudioImport() {
   } else {
     alert("オーディオファイルが正常にインポートされました。");
   }
+}
+
+/**
+ * コンポジション内のオーディオレイヤー数をカウントする関数
+ * @param {CompItem} comp - 対象のコンポジション
+ * @return {number} オーディオレイヤーの数
+ */
+function countAudioLayers(comp) {
+  var count = 0;
+  for (var i = 1; i <= comp.numLayers; i++) {
+    if (comp.layer(i).hasAudio) {
+      count++;
+    }
+  }
+  return count;
 }

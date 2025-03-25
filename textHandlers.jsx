@@ -8,11 +8,16 @@
  * @param {CompItem} comp - 対象のコンポジション
  * @param {number} xPos - X座標
  * @param {number} yPos - Y座標
+ * @return {number} 挿入されたテキストレイヤーの数
  */
 function insertTextForAllAudioLayers(comp, xPos, yPos) {
+  // デバッグ: 関数開始
+  alert("テキスト挿入開始: コンポジション " + comp.name);
+
   var layers = comp.layers;
   var numLayers = layers.length;
   var audioLayers = [];
+  var textLayersAdded = 0;
 
   // オーディオレイヤーを収集
   for (var i = 1; i <= numLayers; i++) {
@@ -22,22 +27,50 @@ function insertTextForAllAudioLayers(comp, xPos, yPos) {
     }
   }
 
+  // デバッグ: 検出されたオーディオレイヤー数
+  alert("検出されたオーディオレイヤー数: " + audioLayers.length);
+
   // 各オーディオレイヤーに対してテキストを挿入
   for (var i = audioLayers.length - 1; i >= 0; i--) {
-    var layer = audioLayers[i];
-    var duration = {
-      inPoint: layer.inPoint,
-      outPoint: layer.outPoint,
-    };
-    insertTextLayer(
-      comp,
-      layer.name,
-      xPos,
-      yPos,
-      duration.inPoint,
-      duration.outPoint
-    );
+    try {
+      var layer = audioLayers[i];
+      var duration = {
+        inPoint: layer.inPoint,
+        outPoint: layer.outPoint,
+      };
+
+      // デバッグ: 処理中のオーディオレイヤー
+      alert(
+        "テキスト挿入中: レイヤー " +
+          layer.name +
+          " (" +
+          (audioLayers.length - i) +
+          "/" +
+          audioLayers.length +
+          ")"
+      );
+
+      var textLayer = insertTextLayer(
+        comp,
+        layer.name,
+        xPos,
+        yPos,
+        duration.inPoint,
+        duration.outPoint
+      );
+
+      if (textLayer) {
+        textLayersAdded++;
+      }
+    } catch (e) {
+      alert("テキスト挿入エラー: " + e.toString());
+    }
   }
+
+  // デバッグ: 挿入されたテキストレイヤー数
+  alert("挿入されたテキストレイヤー数: " + textLayersAdded);
+
+  return textLayersAdded;
 }
 
 /**

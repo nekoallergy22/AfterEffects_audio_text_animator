@@ -153,18 +153,34 @@ function applyTrimPathsAnimation(comp, text) {
  * @param {CompItem} comp - 対象のコンポジション
  */
 function applyOpacityAnimationToTextLayers(comp) {
+  // デバッグ: 関数開始
+  alert(
+    "テキストレイヤーにアニメーション適用開始: コンポジション " + comp.name
+  );
+
   var layers = comp.layers;
+  var animatedLayerCount = 0;
 
   for (var i = 1; i <= layers.length; i++) {
-    var layer = layers[i];
+    try {
+      var layer = layers[i];
 
-    if (layer.hasOwnProperty("テキスト")) {
-      var inPoint = layer.inPoint;
-      var currentOpacity = layer.opacity.value;
+      // TextLayerかどうかを正しく判定
+      if (layer.matchName === "ADBE Text Layer") {
+        var inPoint = layer.inPoint;
+        var currentOpacity = layer.opacity.value;
 
-      var opacity = layer.transform.opacity;
-      opacity.setValueAtTime(inPoint, 0);
-      opacity.setValueAtTime(inPoint + 0.4, currentOpacity);
+        var opacity = layer.transform.opacity;
+        opacity.setValueAtTime(inPoint, 0);
+        opacity.setValueAtTime(inPoint + 0.4, currentOpacity);
+
+        animatedLayerCount++;
+      }
+    } catch (e) {
+      alert("テキストアニメーション適用エラー: " + e.toString());
     }
   }
+
+  // デバッグ: アニメーション適用結果
+  alert("アニメーションを適用したテキストレイヤー数: " + animatedLayerCount);
 }
