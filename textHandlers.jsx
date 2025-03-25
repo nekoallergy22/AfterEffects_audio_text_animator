@@ -84,36 +84,52 @@ function insertTextForAllAudioLayers(comp, xPos, yPos) {
  * @return {TextLayer} 作成されたテキストレイヤー
  */
 function insertTextLayer(comp, name, x, y, inPoint, outPoint) {
-  // ファイル名から表示テキストを生成
-  var displayText = name.replace(".mp3", "").slice(5);
-  var textLayer = comp.layers.addText(displayText);
+  try {
+    Logger.debug("テキストレイヤー挿入開始: " + name);
 
-  // テキストのプロパティを設定
-  setTextLayerProperties(textLayer, "565656", 30);
-  setLayerAnchorPointToCenter(textLayer);
+    // ファイル名から表示テキストを生成
+    var displayText = name.replace(".mp3", "").slice(5);
+    var textLayer = comp.layers.addText(displayText);
 
-  // 位置と時間を設定
-  textLayer.position.setValue([x, y]);
-  textLayer.inPoint = inPoint;
-  textLayer.outPoint = outPoint;
+    Logger.debug("テキストレイヤー作成: " + displayText);
 
-  return textLayer;
+    // テキストのプロパティを設定
+    setTextLayerProperties(textLayer, 30);
+    setLayerAnchorPointToCenter(textLayer);
+
+    // 位置と時間を設定
+    textLayer.position.setValue([x, y]);
+    textLayer.inPoint = inPoint;
+    textLayer.outPoint = outPoint;
+
+    Logger.debug("テキストレイヤー設定完了: " + displayText);
+    return textLayer;
+  } catch (e) {
+    Logger.error("テキストレイヤー挿入エラー: " + e.toString());
+    return null;
+  }
 }
 
 /**
  * テキストレイヤーのプロパティを設定する関数
  * @param {TextLayer} layer - 対象のテキストレイヤー
- * @param {string} hexColor - 16進数カラーコード
  * @param {number} fontSize - フォントサイズ
  */
-function setTextLayerProperties(layer, hexColor, fontSize) {
-  var color = colorSetToRgb(hexColor);
-  var textProp = layer
-    .property("ADBE Text Properties")
-    .property("ADBE Text Document");
-  var textValue = textProp.value;
-  textValue.applyFill = true;
-  textValue.fillColor = color;
-  textValue.fontSize = fontSize;
-  textProp.setValue(textValue);
+function setTextLayerProperties(layer, fontSize) {
+  try {
+    var textProp = layer
+      .property("ADBE Text Properties")
+      .property("ADBE Text Document");
+    var textValue = textProp.value;
+
+    // 直接RGB値を設定（カラー変換関数を使用しない）
+    textValue.applyFill = true;
+    textValue.fillColor = [0.337, 0.337, 0.337]; // グレー (86, 86, 86)
+    textValue.fontSize = fontSize;
+
+    textProp.setValue(textValue);
+    Logger.debug("テキストプロパティ設定完了");
+  } catch (e) {
+    Logger.error("テキストプロパティ設定エラー: " + e.toString());
+  }
 }

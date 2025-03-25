@@ -17,50 +17,28 @@ function customAlert(message, title, allowCancel) {
   title = title || "After Effects Audio Text Animator";
   allowCancel = allowCancel === undefined ? false : allowCancel;
 
-  var dialog = new Window("dialog", title);
-  dialog.orientation = "column";
-  dialog.alignChildren = ["center", "top"];
-  dialog.spacing = 10;
-  dialog.margins = 16;
-
-  // メッセージテキスト
-  var messageText = dialog.add("statictext", undefined, message, {
-    multiline: true,
-  });
-  messageText.alignment = ["fill", "top"];
-  messageText.preferredSize.width = 300;
-
-  // ボタングループ
-  var buttonGroup = dialog.add("group", undefined);
-  buttonGroup.orientation = "row";
-  buttonGroup.alignChildren = ["center", "center"];
-  buttonGroup.spacing = 10;
-
-  var okButton = buttonGroup.add("button", undefined, "OK");
-  okButton.preferredSize.width = 80;
-
-  var cancelButton = null;
+  // ScriptUIでは、ダイアログのボタンを直接指定する方法もある
   if (allowCancel) {
-    cancelButton = buttonGroup.add("button", undefined, "中断");
-    cancelButton.preferredSize.width = 80;
-  }
-
-  var result = true;
-
-  okButton.onClick = function () {
-    dialog.close();
-  };
-
-  if (allowCancel) {
-    cancelButton.onClick = function () {
-      result = false;
+    // OKとキャンセルボタンを持つダイアログを表示
+    var result = confirm(message, false, title);
+    if (!result) {
       isProcessCancelled = true;
-      dialog.close();
-    };
+    }
+    return result;
+  } else {
+    // OKボタンのみのダイアログを表示
+    alert(message, title);
+    return true;
   }
+}
 
-  dialog.show();
-  return result;
+/**
+ * ESCキーを監視して処理を中断する機能を追加
+ * After Effectsでは、ESCキーを押すとスクリプトの実行が中断される
+ * この機能を利用して、ユーザーに中断方法を伝える
+ */
+function notifyEscToCancel() {
+  alert("処理を中断するには、ESCキーを押してください。", "中断方法");
 }
 
 /**
