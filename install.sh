@@ -24,6 +24,7 @@ FILES_TO_INSTALL=(
   "animations.jsx"
   "textHandlers.jsx"
   "jsonHandlers.jsx"
+  "logger.jsx"
   "ui.jsx"
 )
 
