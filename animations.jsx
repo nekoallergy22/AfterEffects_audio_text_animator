@@ -81,7 +81,7 @@ function sequenceAudioLayers(comp) {
     }
   }
 
-  // オーディオレイヤーをファイル名の最初の4文字（数字）で降順にソート
+  // オーディオレイヤーをファイル名の最初の4文字（数字）で昇順にソート
   audioLayers.sort(function (a, b) {
     // ファイル名を取得
     var aName = a.name;
@@ -91,8 +91,8 @@ function sequenceAudioLayers(comp) {
     var aNum = parseInt(aName.substring(0, 4));
     var bNum = parseInt(bName.substring(0, 4));
 
-    // 降順にソート
-    return bNum - aNum; // 降順ソート
+    // 昇順にソート
+    return aNum - bNum; // 昇順ソート
   });
 
   // ソート結果をログに出力
