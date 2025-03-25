@@ -81,12 +81,44 @@ function sequenceAudioLayers(comp) {
     }
   }
 
+  // オーディオレイヤーをファイル名の最初の4文字（数字）で降順にソート
+  audioLayers.sort(function (a, b) {
+    // ファイル名を取得
+    var aName = a.name;
+    var bName = b.name;
+
+    // 最初の4文字を取得（4桁のゼロ埋め数字）
+    var aNum = parseInt(aName.substring(0, 4));
+    var bNum = parseInt(bName.substring(0, 4));
+
+    // 降順にソート
+    return bNum - aNum; // 降順ソート
+  });
+
+  // ソート結果をログに出力
+  var audioLayerNames = "";
+  for (var i = 0; i < audioLayers.length; i++) {
+    if (i > 0) {
+      audioLayerNames += ", ";
+    }
+    audioLayerNames += audioLayers[i].name;
+  }
+  Logger.info("オーディオレイヤーをソート: " + audioLayerNames);
+
   // オーディオレイヤーをシーケンス順に配置
   var startTime = 0;
   for (var j = 0; j < audioLayers.length; j++) {
     var layer = audioLayers[j];
     layer.startTime = startTime;
     startTime = layer.outPoint;
+    Logger.debug(
+      "オーディオレイヤー配置: " +
+        layer.name +
+        ", 開始時間: " +
+        layer.startTime +
+        ", 終了時間: " +
+        layer.outPoint
+    );
   }
 
   // その他レイヤーの終了点をコンポジションのサイズに調整
