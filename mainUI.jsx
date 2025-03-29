@@ -1,50 +1,41 @@
-// ui/mainUI.jsx
-
-// 必要なモジュールを読み込み
-var scriptFolder = new File($.fileName).parent.absoluteURI;
-
-$.evalFile(scriptFolder + "/constants.jsx");
-$.evalFile(scriptFolder + "/logger.jsx");
-$.evalFile(scriptFolder + "/utils.jsx");
-$.evalFile(scriptFolder + "/fileHandlers.jsx");
-$.evalFile(scriptFolder + "/compHandlers.jsx");
-$.evalFile(scriptFolder + "/textHandlers.jsx");
-$.evalFile(scriptFolder + "/animationHandlers.jsx");
-$.evalFile(scriptFolder + "/jsonHandlers.jsx");
-$.evalFile(scriptFolder + "/ui/standardTab.jsx");
-$.evalFile(scriptFolder + "/ui/stepTab.jsx");
-$.evalFile(scriptFolder + "/ui/debugTab.jsx");
+// mainUI.jsx - シンプル版
 
 // グローバル変数
-var isProcessCancelled = false;
+var scriptFolder = new File($.fileName).parent.absoluteURI;
 
 // ScriptUI Panels用のエントリーポイント
 function buildUI(thisObj) {
-  // ロガーを初期化
-  Logger.init();
-  Logger.info("UIの構築を開始");
-
   var panel =
     thisObj instanceof Panel
       ? thisObj
-      : new Window("palette", "After Effects Audio Text Animator", undefined, {
-          resizeable: true,
-        });
+      : new Window(
+          "palette",
+          "After Effects Audio Text Animator - シンプル版",
+          undefined,
+          {
+            resizeable: true,
+          }
+        );
 
   // パネルのサイズを設定
-  panel.preferredSize = [UI_SETTINGS.PANEL_WIDTH, UI_SETTINGS.PANEL_HEIGHT];
+  panel.preferredSize = [350, 200];
 
-  // タブパネルを作成
-  var tpanel = panel.add("tabbedpanel", undefined, "モード");
-  tpanel.alignChildren = "fill";
+  // 説明テキスト
+  var infoText = panel.add(
+    "statictext",
+    undefined,
+    "これはシンプル版のUIです。\n問題の切り分けに使用します。",
+    { multiline: true }
+  );
+  infoText.alignment = ["fill", "top"];
+  infoText.preferredSize.height = 40;
 
-  // 各タブを追加
-  var standardTab = buildStandardTab(tpanel);
-  var stepTab = buildStepTab(tpanel);
-  var debugTab = buildDebugTab(tpanel);
-
-  // 初期タブを選択
-  tpanel.selection = standardTab;
+  // テストボタン
+  var testButton = panel.add("button", undefined, "テストボタン");
+  testButton.size = [330, 40];
+  testButton.onClick = function () {
+    alert("ボタンが正常に動作しています！");
+  };
 
   // パネルのレイアウトを調整
   panel.layout.layout(true);
@@ -56,7 +47,6 @@ function buildUI(thisObj) {
     panel.show();
   }
 
-  Logger.info("UIの構築完了");
   return panel;
 } // buildUI関数の終わり
 
