@@ -1,7 +1,6 @@
 #!/bin/bash
 
 # After Effects Audio Text Animator インストールスクリプト
-
 # 必要なファイルを After Effects のスクリプトフォルダにコピーします
 
 # 定数
@@ -21,43 +20,18 @@ fi
 
 # インストールするファイルのリスト
 FILES_TO_INSTALL=(
-  "constants.jsx"
-  "logger.jsx"
   "utils.jsx"
-  "fileHandlers.jsx"
-  "compHandlers.jsx"
+  "animations.jsx"
   "textHandlers.jsx"
-  "animationHandlers.jsx"
   "jsonHandlers.jsx"
-  "mainUI.jsx"
-)
-
-# UIディレクトリのファイル
-UI_FILES=(
-  "standardTab.jsx"
-  "stepTab.jsx"
-  "debugTab.jsx"
+  "logger.jsx"
+  "ui.jsx"
 )
 
 # ファイルが存在するか確認
 for file in "${FILES_TO_INSTALL[@]}"; do
   if [ ! -f "$CURRENT_DIR/$file" ]; then
     echo "エラー: $file ファイルが見つかりません。"
-    echo "このスクリプトは AfterEffects_audio_text_animator リポジトリのルートディレクトリで実行してください。"
-    exit 1
-  fi
-done
-
-# UIディレクトリとファイルの確認
-if [ ! -d "$CURRENT_DIR/ui" ]; then
-  echo "エラー: ui ディレクトリが見つかりません。"
-  echo "このスクリプトは AfterEffects_audio_text_animator リポジトリのルートディレクトリで実行してください。"
-  exit 1
-fi
-
-for file in "${UI_FILES[@]}"; do
-  if [ ! -f "$CURRENT_DIR/ui/$file" ]; then
-    echo "エラー: ui/$file ファイルが見つかりません。"
     echo "このスクリプトは AfterEffects_audio_text_animator リポジトリのルートディレクトリで実行してください。"
     exit 1
   fi
@@ -75,18 +49,6 @@ if [ ! -d "$ARCHIVE_DIR" ]; then
   fi
 fi
 
-# UIディレクトリの作成
-UI_DIR="$AE_SCRIPTS_DIR/ui"
-if [ ! -d "$UI_DIR" ]; then
-  echo "UIディレクトリを作成しています..."
-  mkdir -p "$UI_DIR"
-  if [ $? -ne 0 ]; then
-    echo "エラー: UIディレクトリの作成に失敗しました。"
-    echo "権限の問題がある場合は、sudo を使用して実行してください: sudo ./install.sh"
-    exit 1
-  fi
-fi
-
 # 現在の日時を取得（ファイル名用）
 TIMESTAMP=$(date +"%Y%m%d_%H%M")
 
@@ -97,9 +59,11 @@ for file in "${FILES_TO_INSTALL[@]}"; do
   # 既存のファイルをアーカイブ
   if [ -f "$AE_SCRIPTS_DIR/$file" ]; then
     echo "既存の $file ファイルをアーカイブしています..."
+    # ファイル名から拡張子を取り出す
     filename=$(basename -- "$file")
     extension="${filename##*.}"
     filename="${filename%.*}"
+    
     mv "$AE_SCRIPTS_DIR/$file" "$ARCHIVE_DIR/${filename}_${TIMESTAMP}.${extension}"
     if [ $? -ne 0 ]; then
       echo "エラー: 既存の $file ファイルのアーカイブに失敗しました。"
@@ -117,47 +81,29 @@ for file in "${FILES_TO_INSTALL[@]}"; do
   fi
 done
 
-# UIファイルをコピー
-for file in "${UI_FILES[@]}"; do
-  echo "ui/$file を After Effects スクリプトフォルダにコピーしています..."
-  
-  # 既存のファイルをアーカイブ
-  if [ -f "$UI_DIR/$file" ]; then
-    echo "既存の ui/$file ファイルをアーカイブしています..."
-    filename=$(basename -- "$file")
-    extension="${filename##*.}"
-    filename="${filename%.*}"
-    mv "$UI_DIR/$file" "$ARCHIVE_DIR/ui_${filename}_${TIMESTAMP}.${extension}"
-    if [ $? -ne 0 ]; then
-      echo "エラー: 既存の ui/$file ファイルのアーカイブに失敗しました。"
-      echo "権限の問題がある場合は、sudo を使用して実行してください: sudo ./install.sh"
-      exit 1
-    fi
-  fi
-  
-  # 新しいファイルをコピー
-  cp "$CURRENT_DIR/ui/$file" "$UI_DIR/"
+# 旧ファイルの処理（components.jsx と myUI.jsx）
+# components.jsx は不要になったので、存在する場合はアーカイブする
+if [ -f "$AE_SCRIPTS_DIR/components.jsx" ]; then
+  echo "既存の components.jsx ファイルをアーカイブしています..."
+  mv "$AE_SCRIPTS_DIR/components.jsx" "$ARCHIVE_DIR/components_${TIMESTAMP}.jsx"
   if [ $? -ne 0 ]; then
-    echo "エラー: ui/$file のコピーに失敗しました。"
+    echo "エラー: 既存の components.jsx ファイルのアーカイブに失敗しました。"
     echo "権限の問題がある場合は、sudo を使用して実行してください: sudo ./install.sh"
     exit 1
   fi
-done
+fi
 
-# 旧ファイルの処理
-OLD_FILES=("animations.jsx" "ui.jsx" "components.jsx" "myUI.jsx")
-for file in "${OLD_FILES[@]}"; do
-  if [ -f "$AE_SCRIPTS_DIR/$file" ]; then
-    echo "既存の $file ファイルをアーカイブしています..."
-    mv "$AE_SCRIPTS_DIR/$file" "$ARCHIVE_DIR/${file%.*}_${TIMESTAMP}.${file##*.}"
-    if [ $? -ne 0 ]; then
-      echo "エラー: 既存の $file ファイルのアーカイブに失敗しました。"
-      echo "権限の問題がある場合は、sudo を使用して実行してください: sudo ./install.sh"
-      exit 1
-    fi
+# myUI.jsx は ui.jsx に置き換えられたので、存在する場合はアーカイブする
+if [ -f "$AE_SCRIPTS_DIR/myUI.jsx" ]; then
+  echo "既存の myUI.jsx ファイルをアーカイブしています..."
+  mv "$AE_SCRIPTS_DIR/myUI.jsx" "$ARCHIVE_DIR/myUI_${TIMESTAMP}.jsx"
+  if [ $? -ne 0 ]; then
+    echo "エラー: 既存の myUI.jsx ファイルのアーカイブに失敗しました。"
+    echo "権限の問題がある場合は、sudo を使用して実行してください: sudo ./install.sh"
+    exit 1
   fi
-done
+fi
 
 # 完了メッセージ
 echo "インストールが完了しました！"
-echo "After Effects 2025 を起動し、「ウィンドウ > mainUI.jsx」からスクリプトパネルを開いてください。"
+echo "After Effects 2025 を起動し、「ウィンドウ > ui.jsx」からスクリプトパネルを開いてください。"

@@ -1,7 +1,4 @@
-/**
- * After Effects Audio Text Animator - Utility Functions
- * 基本的なユーティリティ関数を提供します
- */
+// utils.jsx
 
 /**
  * 16進数カラーコードをRGB値に変換する関数
@@ -17,8 +14,7 @@ function colorSetToRgb(hexColor) {
       Logger.warn(
         "無効なカラーコード: " + hexColor + " - デフォルト値を使用します"
       );
-      // デフォルト値（グレー）を返す
-      return [0.5, 0.5, 0.5, 1];
+      return DEFAULT_TEXT.COLOR.concat(1); // アルファ値を追加
     }
 
     // 先頭の#を削除（もしあれば）
@@ -33,114 +29,79 @@ function colorSetToRgb(hexColor) {
     // NaNチェック
     if (isNaN(r) || isNaN(g) || isNaN(b)) {
       Logger.warn("カラー変換エラー: 無効な16進数 - デフォルト値を使用します");
-      return [0.5, 0.5, 0.5, 1]; // デフォルト値（グレー）
+      return DEFAULT_TEXT.COLOR.concat(1);
     }
 
     Logger.debug("カラー変換成功: [" + r + ", " + g + ", " + b + ", 1]");
     return [r, g, b, 1]; // RGBA形式で返す
   } catch (e) {
     Logger.error("カラー変換エラー: " + e.toString());
-    return [0.5, 0.5, 0.5, 1]; // エラー時はデフォルト値（グレー）
+    return DEFAULT_TEXT.COLOR.concat(1);
   }
 }
 
 /**
- * JSONファイルの情報を読み込む関数
- * @return {string} JSONファイルの内容
+ * レイヤーのアンカーポイントを中央に設定する関数
+ * @param {Layer} layer - 対象のレイヤー
  */
-function openJsonContents() {
-  var file = File.openDialog("Select a JSON file", "*.json");
-  if (file) {
-    file.encoding = "UTF-8";
-    file.open("r");
-    var jsonContent = file.read();
-    file.close();
-    return jsonContent;
+function setLayerAnchorPointToCenter(layer) {
+  try {
+    var sourceRect = layer.sourceRectAtTime(0, false);
+    var width = sourceRect.width;
+    var height = sourceRect.height;
+    var centerX = sourceRect.left + width / 2;
+    var centerY = sourceRect.top + height / 2;
+    layer.anchorPoint.setValue([centerX, centerY]);
+  } catch (e) {
+    Logger.error("アンカーポイント設定エラー: " + e.toString());
+  }
+}
+
+/**
+ * 処理が中断されたかどうかを確認する関数
+ * @return {boolean} 処理が中断された場合はtrue
+ */
+function isProcessingCancelled() {
+  return isProcessCancelled;
+}
+
+/**
+ * 処理中断フラグをリセットする関数
+ */
+function resetCancellationFlag() {
+  isProcessCancelled = false;
+}
+
+/**
+ * ESCキーを監視して処理を中断する機能を追加
+ * After Effectsでは、ESCキーを押すとスクリプトの実行が中断される
+ * この機能を利用して、ユーザーに中断方法を伝える
+ */
+function notifyEscToCancel() {
+  alert("処理を中断するには、ESCキーを押してください。", "中断方法");
+}
+
+/**
+ * カスタムアラートダイアログを表示する関数
+ * @param {string} message - 表示するメッセージ
+ * @param {string} title - ダイアログのタイトル（省略可）
+ * @param {boolean} allowCancel - キャンセルボタンを表示するかどうか
+ * @return {boolean} OKボタンが押された場合はtrue、キャンセルボタンが押された場合はfalse
+ */
+function customAlert(message, title, allowCancel) {
+  title = title || "After Effects Audio Text Animator";
+  allowCancel = allowCancel === undefined ? false : allowCancel;
+
+  if (allowCancel) {
+    // OKとキャンセルボタンを持つダイアログを表示
+    var result = confirm(message, false, title);
+    if (!result) {
+      isProcessCancelled = true;
+    }
+    return result;
   } else {
-    alert("No file selected.");
-    return null;
+    // OKボタンのみのダイアログを表示
+    alert(message, title);
+    return true;
   }
-}
-
-/**
- * 新規コンポジションを作成する関数
- * @param {string} name - コンポジション名
- * @param {number} width - 幅
- * @param {number} height - 高さ
- * @param {number} pixelAspect - ピクセルアスペクト比
- * @param {number} duration - 長さ（秒）
- * @param {number} frameRate - フレームレート
- * @return {CompItem} 作成されたコンポジション
- */
-function createNewComp(name, width, height, pixelAspect, duration, frameRate) {
-  var comp = app.project.items.addComp(
-    name,
-    width,
-    height,
-    pixelAspect,
-    duration,
-    frameRate
-  );
-  return comp;
-}
-
-/**
- * コンポジションを名前で検索する関数
- * @param {string} name - 検索するコンポジション名
- * @return {CompItem|null} 見つかったコンポジションまたはnull
- */
-function findCompByName(name) {
-  var project = app.project;
-  var numItems = project.numItems;
-
-  for (var i = 1; i <= numItems; i++) {
-    if (project.item(i) instanceof CompItem && project.item(i).name === name) {
-      return project.item(i);
-    }
-  }
-
-  return null;
-}
-
-/**
- * プロジェクト内のファイルを名前で検索する関数
- * @param {string} name - 検索するファイル名
- * @return {FootageItem} 見つかったファイルアイテム、見つからない場合はnull
- */
-function findFileInProject(name) {
-  var project = app.project;
-
-  // 完全一致するファイルを検索
-  for (var i = 1; i <= project.numItems; i++) {
-    var item = project.item(i);
-    if (item instanceof FootageItem) {
-      // ファイル名が完全に一致するか確認
-      if (item.name === name) {
-        Logger.info("ファイル検索: " + name + " → 完全一致: " + item.name);
-        return item;
-      }
-    }
-  }
-
-  // 部分一致するファイルを検索
-  for (var i = 1; i <= project.numItems; i++) {
-    var item = project.item(i);
-    if (item instanceof FootageItem && item.name.indexOf(name) !== -1) {
-      Logger.info("ファイル検索: " + name + " → 部分一致: " + item.name);
-      return item;
-    }
-  }
-
-  Logger.warn("ファイル検索: " + name + " → 見つかりません");
-  return null;
-}
-
-/**
- * ファイルを指定されたコンポジションに配置する関数
- * @param {FootageItem} file - 配置するファイル
- * @param {CompItem} comp - 対象のコンポジション
- * @return {Layer} 追加されたレイヤー
- */
-function placeFileInComp(file, comp) {
-  return comp.layers.add(file);
 }
