@@ -103,22 +103,35 @@ function findCompByName(name) {
 }
 
 /**
- * プロジェクト内から指定された名前の最初の4文字でファイルを探す関数
- * @param {string} name - 検索するファイル名の先頭4文字
- * @return {FootageItem|null} 見つかったフッテージアイテムまたはnull
+ * プロジェクト内のファイルを名前で検索する関数
+ * @param {string} name - 検索するファイル名
+ * @return {FootageItem} 見つかったファイルアイテム、見つからない場合はnull
  */
 function findFileInProject(name) {
-  var items = app.project.items;
+  var project = app.project;
 
-  for (var i = 1; i <= items.length; i++) {
-    if (
-      items[i].name.substring(0, 4) === name &&
-      items[i] instanceof FootageItem
-    ) {
-      return items[i];
+  // 完全一致するファイルを検索
+  for (var i = 1; i <= project.numItems; i++) {
+    var item = project.item(i);
+    if (item instanceof FootageItem) {
+      // ファイル名が完全に一致するか確認
+      if (item.name === name) {
+        Logger.info("ファイル検索: " + name + " → 完全一致: " + item.name);
+        return item;
+      }
     }
   }
 
+  // 部分一致するファイルを検索
+  for (var i = 1; i <= project.numItems; i++) {
+    var item = project.item(i);
+    if (item instanceof FootageItem && item.name.indexOf(name) !== -1) {
+      Logger.info("ファイル検索: " + name + " → 部分一致: " + item.name);
+      return item;
+    }
+  }
+
+  Logger.warn("ファイル検索: " + name + " → 見つかりません");
   return null;
 }
 

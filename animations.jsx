@@ -81,29 +81,17 @@ function sequenceAudioLayers(comp) {
     }
   }
 
-  // オーディオレイヤーをファイル名の最初の4文字（数字）で昇順にソート
-  audioLayers.sort(function (a, b) {
-    // ファイル名を取得
-    var aName = a.name;
-    var bName = b.name;
+  // 現在のレイヤー順序を保持（上から下へ）
+  // After Effectsでは、インデックスが小さいほど上のレイヤー
+  // 配置時にインデックスを指定しているので、その順序を保持する
 
-    // 最初の4文字を取得（4桁のゼロ埋め数字）
-    var aNum = parseInt(aName.substring(0, 4));
-    var bNum = parseInt(bName.substring(0, 4));
-
-    // 昇順にソート
-    return aNum - bNum; // 昇順ソート
-  });
-
-  // ソート結果をログに出力
-  var audioLayerNames = "";
+  // 配置前のログ
+  Logger.info("シーケンス配置前のレイヤー状態:");
   for (var i = 0; i < audioLayers.length; i++) {
-    if (i > 0) {
-      audioLayerNames += ", ";
-    }
-    audioLayerNames += audioLayers[i].name;
+    Logger.info(
+      "レイヤー " + audioLayers[i].index + ": " + audioLayers[i].name
+    );
   }
-  Logger.info("オーディオレイヤーをソート: " + audioLayerNames);
 
   // オーディオレイヤーをシーケンス順に配置
   var startTime = 0;
@@ -111,8 +99,8 @@ function sequenceAudioLayers(comp) {
     var layer = audioLayers[j];
     layer.startTime = startTime;
     startTime = layer.outPoint;
-    Logger.debug(
-      "オーディオレイヤー配置: " +
+    Logger.info(
+      "オーディオレイヤー時間配置: " +
         layer.name +
         ", 開始時間: " +
         layer.startTime +
@@ -127,39 +115,18 @@ function sequenceAudioLayers(comp) {
     layer.outPoint = comp.duration;
   }
 
-  app.endUndoGroup();
-}
-
-/**
- * レイヤーのアンカーポイントを中央に設定する関数
- * @param {Layer} layer - 対象のレイヤー
- */
-function setLayerAnchorPointToCenter(layer) {
-  layer.property("Transform").property("Anchor Point").expression =
-    "b = thisLayer.sourceRectAtTime(); [(b.width/2)+b.left,(b.height/2)+b.top];";
-}
-
-/**
- * コンポジション内のすべてのアイテムにアニメーションを付与する関数
- * @param {CompItem} comp - 対象のコンポジション
- * @param {boolean} showAlerts - アラートを表示するかどうか
- */
-function applyAnimationsToAllItems(comp, showAlerts) {
-  // デフォルト値の設定
-  showAlerts = showAlerts === undefined ? false : showAlerts;
-
-  if (comp != null && comp instanceof CompItem) {
-    applyScaleAnimation(comp, "Emoji");
-    applyScaleAnimation(comp, "rafiki");
-    applyScaleAnimation(comp, "icon");
-    applyScaleAnimation(comp, "item");
-    applyTrimPathsAnimation(comp, "line");
-    applyOpacityAnimationToTextLayers(comp, showAlerts);
-  } else {
-    var errorMessage = "コンポジションが選択されていません。";
-    Logger.error(errorMessage);
-    customAlert(errorMessage, "エラー"); // エラー時は常にアラート表示
+  // 配置後のログ
+  Logger.info("シーケンス配置後のレイヤー状態:");
+  for (var i = 1; i <= comp.numLayers; i++) {
+    var layer = comp.layer(i);
+    if (layer.hasAudio) {
+      Logger.info(
+        "レイヤー " + i + ": " + layer.name + ", 開始時間: " + layer.startTime
+      );
+    }
   }
+
+  app.endUndoGroup();
 }
 
 /**

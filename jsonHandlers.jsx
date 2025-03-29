@@ -226,14 +226,52 @@ function processJSONForAudioImport() {
 
     if (isProcessingCancelled()) return;
 
-    // オーディオファイルをコンポジションに配置
-    var audioPlacedCount = 0;
+    // コンポジションごとにオーディオファイルをグループ化
+    var compAudioMap = {};
+
+    // 各コンポジションに配置するオーディオファイルをグループ化
     for (var i = 0; i < audioData.length; i++) {
+      var audioItem = audioData[i];
+      var compId = audioItem.comp_id.toString();
+      var audioId = audioItem.audio_id;
+
+      // audio_idが正しく読み込めているか確認
+      if (audioId === undefined || audioId === null) {
+        Logger.error("audio_idが見つかりません: " + audioItem.name);
+        continue;
+      }
+
+      if (!compAudioMap[compId]) {
+        compAudioMap[compId] = [];
+      }
+
+      // デバッグ情報
+      Logger.info(
+        "オーディオアイテム解析: " +
+          audioItem.name +
+          " (audio_id: " +
+          audioId +
+          ", comp_id: " +
+          compId +
+          ")"
+      );
+
+      compAudioMap[compId].push(audioItem);
+    }
+
+    // 各コンポジションに対して処理
+    var audioPlacedCount = 0;
+    var compIds = Object.keys(compAudioMap);
+
+    for (var i = 0; i < compIds.length; i++) {
       // 10件ごとに進捗を表示し、中断の機会を与える
       if (i > 0 && i % 10 === 0) {
         if (
           !customAlert(
-            "オーディオファイル配置中: " + i + "/" + audioData.length,
+            "オーディオファイル配置中: コンポジション " +
+              (i + 1) +
+              "/" +
+              compIds.length,
             "処理中...",
             true // 中断ボタンを表示
           )
@@ -245,26 +283,112 @@ function processJSONForAudioImport() {
 
       if (isProcessingCancelled()) return;
 
-      var audioName = audioData[i].name.substring(0, 4);
-      var compId = audioData[i].comp_id.toString();
-      var audioFile = findFileInProject(audioName);
+      var compId = compIds[i];
       var targetComp = findCompByName(compId);
 
-      if (audioFile && targetComp) {
-        placeFileInComp(audioFile, targetComp);
-        audioPlacedCount++;
+      if (!targetComp) {
+        compNotFound.push(compId);
+        Logger.warn("コンポジションが見つかりません: " + compId);
+        continue;
+      }
+
+      // このコンポジションに配置するオーディオファイル
+      var compAudioFiles = compAudioMap[compId];
+
+      // audio_idで昇順ソート
+      compAudioFiles.sort(function (a, b) {
+        // audio_idを使用
+        var aId = a.audio_id;
+        var bId = b.audio_id;
+
+        // デバッグ情報
         Logger.info(
-          "オーディオ配置: " + audioName + " → コンポジション " + compId
+          "ソート比較: " +
+            a.name +
+            " (audio_id: " +
+            aId +
+            ") vs " +
+            b.name +
+            " (audio_id: " +
+            bId +
+            ")"
         );
-      } else {
-        if (!audioFile) {
+
+        // 昇順ソート
+        return aId - bId;
+      });
+
+      // ソート結果を詳細にログ出力
+      Logger.info("コンポジション " + compId + " のソート結果:");
+      for (var j = 0; j < compAudioFiles.length; j++) {
+        Logger.info(
+          j +
+            1 +
+            ". " +
+            compAudioFiles[j].name +
+            " (audio_id: " +
+            compAudioFiles[j].audio_id +
+            ")"
+        );
+      }
+
+      // ソート結果をログに出力
+      var sortedNames = "";
+      for (var j = 0; j < compAudioFiles.length; j++) {
+        if (j > 0) sortedNames += ", ";
+        sortedNames += compAudioFiles[j].name;
+      }
+      Logger.info("ソート結果: " + sortedNames);
+
+      // まず、既存のオーディオレイヤーをすべて削除
+      for (var j = targetComp.numLayers; j >= 1; j--) {
+        var layer = targetComp.layer(j);
+        if (layer.hasAudio && layer.source instanceof FootageItem) {
+          layer.remove();
+        }
+      }
+
+      // ソートされた順序でオーディオファイルを配置
+      // 配置前のログ
+      Logger.info("配置前のレイヤー状態:");
+      for (var j = 1; j <= targetComp.numLayers; j++) {
+        Logger.info("レイヤー " + j + ": " + targetComp.layer(j).name);
+      }
+
+      // 昇順でオーディオファイルを配置
+      for (var j = 0; j < compAudioFiles.length; j++) {
+        var audioItem = compAudioFiles[j];
+        // ファイル名全体を使用
+        var audioName = audioItem.name;
+        var audioFile = findFileInProject(audioName);
+
+        if (audioFile) {
+          // レイヤーを追加（インデックスを明示的に指定）
+          // After Effectsでは、インデックスが小さいほど上のレイヤー
+          // j+1を指定することで、audio_idが小さいほど上のレイヤーになる
+          var layer = targetComp.layers.add(audioFile, j + 1);
+          audioPlacedCount++;
+          Logger.info(
+            "オーディオ配置: " +
+              audioItem.name +
+              " → コンポジション " +
+              compId +
+              " (audio_id: " +
+              audioItem.audio_id +
+              ", インデックス: " +
+              layer.index +
+              ")"
+          );
+        } else {
           fileNotFound.push(audioName);
           Logger.warn("オーディオファイルが見つかりません: " + audioName);
         }
-        if (!targetComp) {
-          compNotFound.push(compId);
-          Logger.warn("コンポジションが見つかりません: " + compId);
-        }
+      }
+
+      // 配置後のログ
+      Logger.info("配置後のレイヤー状態:");
+      for (var j = 1; j <= targetComp.numLayers; j++) {
+        Logger.info("レイヤー " + j + ": " + targetComp.layer(j).name);
       }
     }
 
