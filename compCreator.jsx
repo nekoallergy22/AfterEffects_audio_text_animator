@@ -1,4 +1,9 @@
-// compCreator.jsx - コンポジション作成機能を提供するモジュール
+// compCreator.jsx - コンポジション作成機能のメインモジュール
+
+$.evalFile(new File($.fileName).parent.absoluteURI + "/compUtils.jsx");
+$.evalFile(new File($.fileName).parent.absoluteURI + "/slideCompCreator.jsx");
+$.evalFile(new File($.fileName).parent.absoluteURI + "/mainCompCreator.jsx");
+
 function createCompositions() {
   var logger = new Logger("CompCreator");
 
@@ -11,75 +16,26 @@ function createCompositions() {
   app.beginUndoGroup("コンポジションの作成");
 
   try {
-    var slideFolder = app.project.items.addFolder("slide");
-    logger.log("slideフォルダを作成しました");
+    // slideフォルダを作成
+    var slideFolder = createSlideFolder();
 
-    var slideItems = [];
-    for (var i = 0; i < jsonData.slide.length; i++) {
-      var slideData = jsonData.slide[i];
-      var slideName = slideData.name;
-      var duration = slideData.duration / 1000;
+    // スライドコンポジションを作成
+    var result = createSlideCompositions(jsonData.slide, slideFolder);
+    var slideItems = result.slideItems;
+    var totalDuration = result.totalDuration;
 
-      var existingComp = findCompByName(slideName);
-      var slideComp;
-
-      if (existingComp) {
-        slideComp = existingComp;
-        logger.log("既存のコンポジションを使用: " + slideName);
-      } else {
-        slideComp = app.project.items.addComp(
-          slideName,
-          1920,
-          1080,
-          1,
-          duration,
-          30
-        );
-        logger.log("新しいコンポジションを作成: " + slideName);
-      }
-
-      slideComp.parentFolder = slideFolder;
-      slideItems.push(slideComp);
-    }
-
+    // メインコンポジションを作成
     if (jsonData.project && jsonData.project.name) {
-      var mainCompName = jsonData.project.name;
-      var mainComp = findCompByName(mainCompName);
-
-      if (!mainComp) {
-        mainComp = app.project.items.addComp(
-          mainCompName,
-          1920,
-          1080,
-          1,
-          60,
-          30
-        );
-        logger.log("メインコンポジションを作成: " + mainCompName);
-      }
-
-      // 既存のレイヤーを削除
-      while (mainComp.numLayers > 0) {
-        mainComp.layer(1).remove();
-      }
-
-      // 新しいレイヤーを追加
-      var currentTime = 0;
-      for (var j = 0; j < slideItems.length; j++) {
-        var layer = mainComp.layers.add(slideItems[j]);
-        layer.startTime = currentTime;
-        currentTime += slideItems[j].duration;
-      }
-
-      logger.log(
-        slideItems.length +
-          "個のサブコンポジションをメインコンポジションに追加しました"
-      );
+      createMainComposition(jsonData.project.name, slideItems, totalDuration);
     }
 
+    // 完了メッセージ
     alert(
       jsonData.slide.length +
-        "個のコンポジションを作成し、slideフォルダ内に配置しました。"
+        "個のコンポジションを作成し、slideフォルダ内に配置しました。\n" +
+        "メインコンポジションの時間: " +
+        (totalDuration + 10) +
+        "秒 (合計時間 + 10秒バッファー)"
     );
     logger.log(
       jsonData.slide.length +
@@ -91,19 +47,4 @@ function createCompositions() {
   }
 
   app.endUndoGroup();
-}
-
-function findCompByName(name) {
-  try {
-    for (var i = 1; i <= app.project.numItems; i++) {
-      var item = app.project.item(i);
-      if (item instanceof CompItem && item.name === name) {
-        return item;
-      }
-    }
-  } catch (e) {
-    var logger = new Logger("CompCreator");
-    logger.log("コンポジション検索中にエラーが発生しました: " + e.toString());
-  }
-  return null;
 }

@@ -23,10 +23,13 @@ fi
 # インストールするファイルのリスト
 FILES_TO_INSTALL=(
   "MakeCompForJson.jsx"
-  "compCreator.jsx"
   "jsonHandler.jsx"
   "logger.jsx"
   "ui.jsx"
+  "compCreator.jsx"
+  "slideCompCreator.jsx"
+  "mainCompCreator.jsx"
+  "compUtils.jsx"
 )
 
 # ファイルが存在するか確認
