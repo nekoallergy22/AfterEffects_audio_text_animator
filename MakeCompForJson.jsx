@@ -4,6 +4,10 @@ var scriptFolder = new File($.fileName).parent.absoluteURI;
 // 各ファイルを読み込む
 $.evalFile(scriptFolder + "/logger.jsx");
 $.evalFile(scriptFolder + "/jsonHandler.jsx");
+$.evalFile(scriptFolder + "/audioHandler.jsx");
+$.evalFile(scriptFolder + "/compUtils.jsx");
+$.evalFile(scriptFolder + "/slideCompCreator.jsx");
+$.evalFile(scriptFolder + "/mainCompCreator.jsx");
 $.evalFile(scriptFolder + "/compCreator.jsx");
 $.evalFile(scriptFolder + "/ui.jsx");
 

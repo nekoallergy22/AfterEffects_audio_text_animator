@@ -7,40 +7,47 @@ function createUI(thisObj) {
     var panel =
       thisObj instanceof Panel
         ? thisObj
-        : new Window("palette", "JSON読み込み", [0, 0, 260, 360]);
+        : new Window("palette", "JSON読み込み", [0, 0, 260, 400]);
 
     // JSONを読み込むボタン
     panel.loadButton = panel.add("button", [10, 10, 250, 40], "JSONを読み込む");
 
+    // オーディオファイルを追加するボタン
+    panel.addAudioButton = panel.add(
+      "button",
+      [10, 50, 250, 80],
+      "オーディオファイルを追加"
+    );
+
     // 結果表示エリア
-    panel.resultText = panel.add("edittext", [10, 50, 250, 200], "", {
+    panel.resultText = panel.add("edittext", [10, 90, 250, 240], "", {
       multiline: true,
       readonly: true,
       scrollable: true,
     });
 
     // セクション数表示エリア
-    panel.sectionCountText = panel.add("statictext", [10, 210, 250, 250], "", {
+    panel.sectionCountText = panel.add("statictext", [10, 250, 250, 290], "", {
       multiline: true,
     });
 
     // コンポジション作成ボタン
     panel.createCompButton = panel.add(
       "button",
-      [10, 260, 250, 290],
+      [10, 300, 250, 330],
       "コンポジションを作成"
     );
     panel.createCompButton.enabled = false;
 
     // ステータス表示エリア
-    panel.statusText = panel.add("statictext", [10, 300, 250, 320], "準備完了");
+    panel.statusText = panel.add("statictext", [10, 340, 250, 360], "準備完了");
 
     // パネルのリサイズ対応
     panel.onResizing = panel.onResize = function () {
       this.layout.resize();
     };
 
-    // ボタンクリックイベント
+    // JSONを読み込むボタンのクリックイベント
     panel.loadButton.onClick = function () {
       try {
         logger.log("JSONを読み込むボタンがクリックされました");
@@ -49,6 +56,22 @@ function createUI(thisObj) {
         panel.statusText.text = "JSONファイルを読み込みました";
       } catch (e) {
         logger.log("JSONの読み込み中にエラーが発生しました: " + e.toString());
+        panel.statusText.text = "エラーが発生しました";
+        alert("エラーが発生しました: " + e.toString());
+      }
+    };
+
+    // オーディオファイル追加ボタンのクリックイベント
+    panel.addAudioButton.onClick = function () {
+      try {
+        logger.log("オーディオファイル追加ボタンがクリックされました");
+        panel.statusText.text = "オーディオファイルを選択しています...";
+        loadAudioFiles(panel);
+        panel.statusText.text = "オーディオファイルを追加しました";
+      } catch (e) {
+        logger.log(
+          "オーディオファイルの追加中にエラーが発生しました: " + e.toString()
+        );
         panel.statusText.text = "エラーが発生しました";
         alert("エラーが発生しました: " + e.toString());
       }

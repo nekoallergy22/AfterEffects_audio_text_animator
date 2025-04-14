@@ -1,9 +1,5 @@
 // compCreator.jsx - コンポジション作成機能のメインモジュール
 
-$.evalFile(new File($.fileName).parent.absoluteURI + "/compUtils.jsx");
-$.evalFile(new File($.fileName).parent.absoluteURI + "/slideCompCreator.jsx");
-$.evalFile(new File($.fileName).parent.absoluteURI + "/mainCompCreator.jsx");
-
 function createCompositions() {
   var logger = new Logger("CompCreator");
 

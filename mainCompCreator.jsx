@@ -13,6 +13,9 @@ function createMainComposition(name, slideItems, totalDuration) {
   // メインコンポジションにスライドを配置
   arrangeSlideItemsInMainComp(mainComp, slideItems);
 
+  // オーディオファイルを追加
+  addAudioFilesToComp(mainComp);
+
   logger.log(
     slideItems.length +
       "個のサブコンポジションをメインコンポジションに追加しました (合計時間: " +

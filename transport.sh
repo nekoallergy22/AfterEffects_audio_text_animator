@@ -30,6 +30,7 @@ FILES_TO_INSTALL=(
   "slideCompCreator.jsx"
   "mainCompCreator.jsx"
   "compUtils.jsx"
+  "audioHandler.jsx"
 )
 
 # ファイルが存在するか確認

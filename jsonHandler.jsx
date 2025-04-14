@@ -20,10 +20,7 @@ function loadJSON(panel) {
         jsonData = JSON.parse(content);
         panel.resultText.text = content;
 
-        var slideCount = jsonData.slide ? jsonData.slide.length : 0;
-        var audioCount = jsonData.audio ? jsonData.audio.length : 0;
-        panel.sectionCountText.text =
-          "slide: " + slideCount + "\naudios: " + audioCount;
+        updateSectionInfo(panel);
 
         panel.createCompButton.enabled = true;
         logger.log("JSONファイルを正常に読み込みました: " + jsonFile.name);

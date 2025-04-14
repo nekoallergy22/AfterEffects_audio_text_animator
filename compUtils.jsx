@@ -16,10 +16,21 @@ function findCompByName(name) {
   return null;
 }
 
+// 名前でフォルダを検索または作成する関数
+function findOrCreateFolder(folderName) {
+  for (var i = 1; i <= app.project.numItems; i++) {
+    var item = app.project.item(i);
+    if (item instanceof FolderItem && item.name === folderName) {
+      return item;
+    }
+  }
+  return app.project.items.addFolder(folderName);
+}
+
 // slideフォルダを作成する関数
 function createSlideFolder() {
   var logger = new Logger("CompUtils");
-  var slideFolder = app.project.items.addFolder("slide");
+  var slideFolder = findOrCreateFolder("slide");
   logger.log("slideフォルダを作成しました");
   return slideFolder;
 }
@@ -36,4 +47,19 @@ function clearCompLayers(comp) {
     logger.log("レイヤー削除中にエラーが発生しました: " + e.toString());
     return false;
   }
+}
+
+// セクション情報を更新する関数
+function updateSectionInfo(panel) {
+  var slideCount = jsonData && jsonData.slide ? jsonData.slide.length : 0;
+  var audioCount = jsonData && jsonData.audio ? jsonData.audio.length : 0;
+  var loadedAudioCount = getAudioFilesCount();
+
+  panel.sectionCountText.text =
+    "slide: " +
+    slideCount +
+    "\naudios (JSON): " +
+    audioCount +
+    "\naudios (loaded): " +
+    loadedAudioCount;
 }
