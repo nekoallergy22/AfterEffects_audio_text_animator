@@ -20,22 +20,22 @@ function createCompositions() {
     var slideItems = result.slideItems;
     var totalDuration = result.totalDuration;
 
-    // メインコンポジションを作成
+    // 各サブコンポジションに対応する音声データを配置
+    addAudioToSubComps(slideItems, jsonData.slide);
+
+    // メインコンポジションを作成（スライド間のみ配置）
     if (jsonData.project && jsonData.project.name) {
       createMainComposition(jsonData.project.name, slideItems, totalDuration);
     }
 
-    // 完了メッセージ
     alert(
       jsonData.slide.length +
-        "個のコンポジションを作成し、slideフォルダ内に配置しました。\n" +
-        "メインコンポジションの時間: " +
-        (totalDuration + 10) +
-        "秒 (合計時間 + 10秒バッファー)"
+        "個のコンポジションと関連付けられた音声データが作成されました。"
     );
+
     logger.log(
       jsonData.slide.length +
-        "個のコンポジションを作成し、slideフォルダ内に配置しました"
+        "個のコンポジションと関連付けられた音声データが作成されました。"
     );
   } catch (e) {
     alert("コンポジション作成中にエラーが発生しました: " + e.toString());

@@ -24,6 +24,9 @@ function loadAudioFiles(panel) {
     for (var i = 0; i < audioFilesSelection.length; i++) {
       var file = audioFilesSelection[i];
 
+      // ファイル名をURLデコードして正しい形式に変換
+      var decodedName = decodeURIComponent(file.name);
+
       // ファイルをプロジェクトにインポート
       var importOptions = new ImportOptions(file);
       var audioItem = app.project.importFile(importOptions);
@@ -33,11 +36,12 @@ function loadAudioFiles(panel) {
 
       audioFiles.push({
         item: audioItem,
-        name: file.name,
+        name: decodedName, // URLデコード済みの名前を保存
+        id: parseInt(decodedName.substring(0, 4)), // ファイル名の先頭4桁をIDとして扱う
         size: file.length,
       });
 
-      logger.log("オーディオファイルをプロジェクトに追加: " + file.name);
+      logger.log("オーディオファイルをプロジェクトに追加: " + decodedName);
     }
 
     // UI表示を更新
@@ -79,39 +83,80 @@ function updateAudioFilesInfo(panel) {
   }
 }
 
-// オーディオファイルをメインコンポジションに追加する関数
-function addAudioFilesToComp(comp) {
+// サブコンポジションに対応するオーディオを配置する関数
+function addAudioToSubComps(slideComps, jsonSlides) {
   var logger = new Logger("AudioHandler");
 
-  if (audioFiles.length === 0) {
-    logger.log("追加するオーディオファイルがありません");
-    return false;
-  }
-
   try {
-    logger.log(
-      audioFiles.length + "個のオーディオファイルをコンポジションに追加します"
-    );
+    for (var i = 0; i < jsonSlides.length; i++) {
+      var slideData = jsonSlides[i];
+      var slideComp = slideComps[i];
 
-    for (var i = 0; i < audioFiles.length; i++) {
-      // メインコンポジションにレイヤーとして追加
-      var audioLayer = comp.layers.add(audioFiles[i].item);
-      logger.log(
-        "オーディオファイルをコンポジションに追加: " + audioFiles[i].name
-      );
+      if (!slideData.audio_list || slideData.audio_list.length === 0) {
+        logger.log(
+          "スライド " + slideData.name + " に対応するオーディオがありません"
+        );
+        continue;
+      }
+
+      for (var j = 0; j < slideData.audio_list.length; j++) {
+        var audioId = slideData.audio_list[j];
+        var audioFile = findAudioById(audioId);
+
+        if (!audioFile) {
+          logger.log(
+            "スライド " +
+              slideData.name +
+              " に対応するID " +
+              audioId +
+              " のオーディオが見つかりませんでした"
+          );
+          continue;
+        }
+
+        // サブコンポジションにレイヤーとして追加
+        var layer = slideComp.layers.add(audioFile.item);
+        layer.startTime = calculateStartTime(
+          slideComp,
+          layer,
+          j,
+          slideData.margin || 0
+        );
+
+        logger.log(
+          "スライド " +
+            slideData.name +
+            " にオーディオ " +
+            audioFile.name +
+            " を追加しました"
+        );
+      }
     }
 
-    logger.log("すべてのオーディオファイルをコンポジションに追加しました");
     return true;
   } catch (e) {
     logger.log(
-      "オーディオファイル追加中にエラーが発生しました: " + e.toString()
+      "サブコンポジションへのオーディオ配置中にエラーが発生しました: " +
+        e.toString()
     );
     return false;
   }
 }
 
-// オーディオファイルの数を取得する関数
-function getAudioFilesCount() {
-  return audioFiles.length;
+// IDで対応する音声データを見つける関数
+function findAudioById(id) {
+  for (var i = 0; i < audioFiles.length; i++) {
+    if (audioFiles[i].id === id) {
+      return audioFiles[i];
+    }
+  }
+  return null;
+}
+
+// オーディオレイヤーの開始時間を計算する関数
+function calculateStartTime(comp, layer, index, margin) {
+  if (index === 0) return margin / 1000; // 最初のレイヤーはマージンのみ考慮
+
+  var previousLayer = comp.layer(comp.numLayers - index); // 前のレイヤー取得
+  return previousLayer.outPoint + margin / 1000;
 }

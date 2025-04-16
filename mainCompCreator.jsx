@@ -10,17 +10,12 @@ function createMainComposition(name, slideItems, totalDuration) {
   // メインコンポジションを作成または更新
   var mainComp = createOrUpdateMainComp(name, mainCompDuration);
 
-  // メインコンポジションにスライドを配置
+  // メインコンポジションにスライドアイテムを配置（ここではスライド間のみ）
   arrangeSlideItemsInMainComp(mainComp, slideItems);
-
-  // オーディオファイルを追加
-  addAudioFilesToComp(mainComp);
 
   logger.log(
     slideItems.length +
-      "個のサブコンポジションをメインコンポジションに追加しました (合計時間: " +
-      totalDuration +
-      "秒, バッファー: 10秒)"
+      "個のサブコンポジションをメインコンポジションに追加しました"
   );
 
   return mainComp;

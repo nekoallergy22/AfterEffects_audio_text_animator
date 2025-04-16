@@ -10,9 +10,12 @@ function Logger(scriptName) {
 
       // ファイルを開く前にエンコーディングを設定
       this.logFile.encoding = "UTF-8";
-      this.logFile.open("a");
-      this.logFile.writeln(logMessage);
-      this.logFile.close();
+      if (this.logFile.open("a")) {
+        this.logFile.writeln(logMessage); // UTF-8で直接書き込む
+        this.logFile.close();
+      } else {
+        alert("ログファイルを開けませんでした。");
+      }
     } catch (e) {
       alert("ログの書き込み中にエラーが発生しました: " + e.toString());
     }
