@@ -7,6 +7,12 @@
 # 定数
 AE_SCRIPTS_DIR="/Applications/Adobe After Effects 2025/Scripts/ScriptUI Panels"
 CURRENT_DIR=$(pwd)
+DIR=$CURRENT_DIR/..
+
+echo
+echo $DIR
+echo $CURRENT_DIR
+echo
 
 # スクリプトの開始メッセージ
 echo "After Effects Audio Text Animator インストールを開始します..."
@@ -35,7 +41,7 @@ FILES_TO_INSTALL=(
 
 # ファイルが存在するか確認
 for file in "${FILES_TO_INSTALL[@]}"; do
-  if [ ! -f "$CURRENT_DIR/$file" ]; then
+  if [ ! -f "$DIR/$file" ]; then
     echo "エラー: $file ファイルが見つかりません。"
     echo "このスクリプトは AfterEffects_audio_text_animator リポジトリのルートディレクトリで実行してください。"
     exit 1
@@ -69,6 +75,7 @@ for file in "${FILES_TO_INSTALL[@]}"; do
     extension="${filename##*.}"
     filename="${filename%.*}"
     mv "$AE_SCRIPTS_DIR/$file" "$ARCHIVE_DIR/${filename}_${TIMESTAMP}.${extension}"
+    # echo "$AE_SCRIPTS_DIR/$file     $ARCHIVE_DIR/${filename}_${TIMESTAMP}.${extension}"
     if [ $? -ne 0 ]; then
       echo "エラー: 既存の $file ファイルのアーカイブに失敗しました。"
       echo "権限の問題がある場合は、sudo を使用して実行してください: sudo ./install.sh"
@@ -78,7 +85,7 @@ for file in "${FILES_TO_INSTALL[@]}"; do
 
   
   # 新しいファイルをコピー
-  cp "$CURRENT_DIR/$file" "$AE_SCRIPTS_DIR/"
+  cp "$DIR/$file" "$AE_SCRIPTS_DIR/"
   if [ $? -ne 0 ]; then
     echo "エラー: $file のコピーに失敗しました。"
     echo "権限の問題がある場合は、sudo を使用して実行してください: sudo ./install.sh"
