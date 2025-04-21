@@ -21,7 +21,27 @@ function createCompositions() {
     var totalDuration = result.totalDuration;
 
     // 各サブコンポジションに対応する音声データを配置
-    addAudioToSubComps(slideItems, jsonData.slide);
+    logger.log("オーディオファイルの配置を開始します");
+    var audioResult = addAudioToSubComps(slideItems, jsonData.slide);
+
+    if (audioResult) {
+      logger.log("すべてのオーディオファイルが正常に配置されました");
+    } else {
+      logger.log("一部のオーディオファイルの配置に問題がありました");
+    }
+
+    // オーディオ配置の詳細ログ出力
+    for (var i = 0; i < jsonData.slide.length; i++) {
+      var slideData = jsonData.slide[i];
+      if (slideData.audio_list && slideData.audio_list.length > 0) {
+        logger.log(
+          "スライド " +
+            slideData.name +
+            " のオーディオID一覧: " +
+            slideData.audio_list.join(", ")
+        );
+      }
+    }
 
     // メインコンポジションを作成（スライド間のみ配置）
     if (jsonData.project && jsonData.project.name) {

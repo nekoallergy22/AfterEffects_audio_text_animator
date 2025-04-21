@@ -53,7 +53,12 @@ function clearCompLayers(comp) {
 function updateSectionInfo(panel) {
   var slideCount = jsonData && jsonData.slide ? jsonData.slide.length : 0;
   var audioCount = jsonData && jsonData.audio ? jsonData.audio.length : 0;
-  var loadedAudioCount = getAudioFilesCount();
+  var loadedAudioCount = 0;
+
+  // 関数が存在する場合のみ呼び出し
+  if (typeof getAudioFilesCount === "function") {
+    loadedAudioCount = getAudioFilesCount();
+  }
 
   panel.sectionCountText.text =
     "slide: " +

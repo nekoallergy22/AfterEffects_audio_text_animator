@@ -83,10 +83,71 @@ function updateAudioFilesInfo(panel) {
   }
 }
 
+// IDに基づいてオーディオファイルを検索する関数
+function findAudioById(id) {
+  var logger = new Logger("AudioHandler");
+
+  if (!audioFiles || audioFiles.length === 0) {
+    logger.log("オーディオファイルが読み込まれていません");
+    return null;
+  }
+
+  // 文字列IDを数値に変換（必要な場合）
+  var numericId = parseInt(id, 10);
+
+  for (var i = 0; i < audioFiles.length; i++) {
+    var file = audioFiles[i];
+    var fileId = extractIdFromFileName(file.name);
+
+    if (fileId === numericId || fileId === id) {
+      return file;
+    }
+  }
+
+  logger.log(
+    "ID " + id + " に対応するオーディオファイルが見つかりませんでした"
+  );
+  return null;
+}
+
+// ファイル名からIDを抽出する関数
+function extractIdFromFileName(fileName) {
+  // ファイル名の先頭4桁をIDとして抽出
+  var match = fileName.match(/^(\d{4})_/);
+  if (match && match[1]) {
+    return parseInt(match[1], 10);
+  }
+  return null;
+}
+
+// オーディオレイヤーの開始時間を計算する関数
+function calculateStartTime(comp, layer, index, margin) {
+  var logger = new Logger("AudioHandler");
+
+  // 最初のオーディオはマージンから開始
+  if (index === 0) {
+    logger.log("最初のオーディオ - マージンから開始: " + margin / 1000 + "秒");
+    return margin / 1000; // ミリ秒から秒に変換
+  }
+
+  // 2つ目以降のオーディオは前のレイヤーの終了時点から開始
+  // comp.numLayers は現在のレイヤー数（最新追加レイヤーを含む）
+  // 前のレイヤーは現在のレイヤー+1の位置にある（AEのレイヤーは逆順）
+  var previousLayer = comp.layer(1); // 最後に追加されたレイヤー（現在のレイヤーの前）
+
+  logger.log(
+    "前のレイヤー: " +
+      previousLayer.name +
+      ", 終了時間: " +
+      previousLayer.outPoint +
+      "秒"
+  );
+  return previousLayer.outPoint;
+}
+
 // サブコンポジションに対応するオーディオを配置する関数
 function addAudioToSubComps(slideComps, jsonSlides) {
   var logger = new Logger("AudioHandler");
-
   try {
     for (var i = 0; i < jsonSlides.length; i++) {
       var slideData = jsonSlides[i];
@@ -98,6 +159,13 @@ function addAudioToSubComps(slideComps, jsonSlides) {
         );
         continue;
       }
+
+      logger.log(
+        "スライド " + slideData.name + " のオーディオ配置を開始します"
+      );
+
+      // 現在の時間位置を追跡（マージンを削除し、0から開始）
+      var currentTime = 0; // マージンを使用しない
 
       for (var j = 0; j < slideData.audio_list.length; j++) {
         var audioId = slideData.audio_list[j];
@@ -114,25 +182,44 @@ function addAudioToSubComps(slideComps, jsonSlides) {
           continue;
         }
 
+        // オーディオファイルの長さを取得
+        var audioDuration = getAudioDuration(audioFile.item);
+
         // サブコンポジションにレイヤーとして追加
         var layer = slideComp.layers.add(audioFile.item);
-        layer.startTime = calculateStartTime(
-          slideComp,
-          layer,
-          j,
-          slideData.margin || 0
-        );
+
+        // 開始時間を設定（マージンなし）
+        layer.startTime = currentTime;
+
+        // 次のオーディオの開始時間を更新
+        currentTime += audioDuration;
 
         logger.log(
           "スライド " +
             slideData.name +
             " にオーディオ " +
             audioFile.name +
-            " を追加しました"
+            " (ID: " +
+            audioId +
+            ")" +
+            " を追加しました。配置順序: " +
+            (j + 1) +
+            ", 開始時間: " +
+            layer.startTime +
+            "秒" +
+            ", 終了時間: " +
+            layer.outPoint +
+            "秒" +
+            ", 長さ: " +
+            (layer.outPoint - layer.startTime) +
+            "秒"
         );
       }
-    }
 
+      logger.log(
+        "スライド " + slideData.name + " のオーディオ配置が完了しました"
+      );
+    }
     return true;
   } catch (e) {
     logger.log(
@@ -143,20 +230,17 @@ function addAudioToSubComps(slideComps, jsonSlides) {
   }
 }
 
-// IDで対応する音声データを見つける関数
-function findAudioById(id) {
-  for (var i = 0; i < audioFiles.length; i++) {
-    if (audioFiles[i].id === id) {
-      return audioFiles[i];
-    }
+// オーディオファイルの長さを取得する関数
+function getAudioDuration(item) {
+  if (item && item.duration) {
+    return item.duration;
+  } else {
+    // デフォルト値（秒）を返す
+    return 3;
   }
-  return null;
 }
 
-// オーディオレイヤーの開始時間を計算する関数
-function calculateStartTime(comp, layer, index, margin) {
-  if (index === 0) return margin / 1000; // 最初のレイヤーはマージンのみ考慮
-
-  var previousLayer = comp.layer(comp.numLayers - index); // 前のレイヤー取得
-  return previousLayer.outPoint + margin / 1000;
+// 読み込まれたオーディオファイルの数を返す関数
+function getAudioFilesCount() {
+  return audioFiles ? audioFiles.length : 0;
 }
