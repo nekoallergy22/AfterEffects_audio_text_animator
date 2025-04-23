@@ -50,20 +50,35 @@ function animateShapeLayers() {
     // 各コンポジションに対してアニメーションを適用
     var totalShapesAnimated = 0;
     var totalTextLayersAnimated = 0;
+    var totalLayersExtended = 0;
 
     for (var k = 0; k < uniqueComps.length; k++) {
       var comp = uniqueComps[k];
-      logger.log("コンポジション「" + comp.name + "」にアニメーションを適用中");
       var result = animateLayersInComp(comp);
       totalShapesAnimated += result.shapesAnimated;
       totalTextLayersAnimated += result.textLayersAnimated;
+
+      // シェイプレイヤーのout点をコンポジションの長さに合わせる
+      var extendResult = extendLayersToCompDuration(comp);
+      totalLayersExtended += extendResult;
     }
+
+    // 最終的な結果のログ
+    logger.log(
+      "合計: " +
+        uniqueComps.length +
+        "個のコンポジションに" +
+        (totalShapesAnimated + totalTextLayersAnimated) +
+        "個のアニメーションを適用し、" +
+        totalLayersExtended +
+        "個のレイヤーの長さを調整しました。"
+    );
 
     app.endUndoGroup();
 
     var totalAnimated = totalShapesAnimated + totalTextLayersAnimated;
 
-    if (totalAnimated > 0) {
+    if (totalAnimated > 0 || totalLayersExtended > 0) {
       var message = uniqueComps.length + "個のコンポジションに対して、";
       if (totalShapesAnimated > 0) {
         message += totalShapesAnimated + "個の図形レイヤー";
@@ -72,10 +87,12 @@ function animateShapeLayers() {
         if (totalShapesAnimated > 0) message += "と";
         message += totalTextLayersAnimated + "個のテキストレイヤー";
       }
-      message += "にアニメーションを適用しました。";
+      message += "にアニメーションを適用し、";
+      message +=
+        totalLayersExtended +
+        "個のレイヤーの長さをコンポジションに合わせました。";
 
       alert(message);
-      logger.log(message);
       return true;
     } else {
       alert("アニメーション可能なレイヤーが見つかりませんでした。");
@@ -87,6 +104,37 @@ function animateShapeLayers() {
     alert("エラーが発生しました: " + e.toString());
     return false;
   }
+}
+
+// レイヤーの長さをコンポジションの長さに合わせる関数
+function extendLayersToCompDuration(comp) {
+  var logger = new Logger("ShapeAnimator");
+  var layersExtended = 0;
+
+  for (var i = 1; i <= comp.numLayers; i++) {
+    var layer = comp.layer(i);
+
+    // オーディオレイヤー以外のレイヤーを処理
+    // AudioItemは未定義なので、hasAudioプロパティを使用
+    if (!layer.hasAudio || (layer.hasVideo && layer.hasAudio)) {
+      // レイヤーのout点をコンポジションの長さに合わせる
+      var currentOutPoint = layer.outPoint;
+
+      if (currentOutPoint < comp.duration) {
+        layer.outPoint = comp.duration;
+        layersExtended++;
+      }
+    }
+  }
+
+  logger.log(
+    "スライド「" +
+      comp.name +
+      "」の" +
+      layersExtended +
+      "個のレイヤー長さを調整しました。"
+  );
+  return layersExtended;
 }
 
 // 特定のコンポジション内のレイヤーにアニメーションを適用する関数
@@ -102,35 +150,22 @@ function animateLayersInComp(comp) {
     if (isShapeLayer(layer)) {
       applyScaleAnimation(layer, layerInPoint, comp.frameRate);
       shapesAnimated++;
-      logger.log(
-        "シェイプレイヤー「" +
-          layer.name +
-          "」にスケールアニメーションを適用しました（開始時間: " +
-          layerInPoint +
-          "秒）"
-      );
     } else if (layer instanceof TextLayer) {
       applyOpacityAnimation(layer, layerInPoint, comp.frameRate);
       textLayersAnimated++;
-      logger.log(
-        "テキストレイヤー「" +
-          layer.name +
-          "」に不透明度アニメーションを適用しました（開始時間: " +
-          layerInPoint +
-          "秒）"
-      );
     }
   }
 
-  logger.log(
-    "コンポジション「" +
-      comp.name +
-      "」: " +
-      shapesAnimated +
-      "個の図形レイヤーと " +
-      textLayersAnimated +
-      "個のテキストレイヤーにアニメーションを適用しました"
-  );
+  var totalAnimated = shapesAnimated + textLayersAnimated;
+  if (totalAnimated > 0) {
+    logger.log(
+      "スライド「" +
+        comp.name +
+        "」に" +
+        totalAnimated +
+        "個のアニメーションを適用しました。"
+    );
+  }
 
   return {
     shapesAnimated: shapesAnimated,

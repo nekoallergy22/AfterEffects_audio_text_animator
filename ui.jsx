@@ -38,7 +38,7 @@ function createUI(thisObj) {
     panel.animateShapesButton = panel.add(
       "button",
       [10, 340, 250, 370],
-      "全コンポジションにアニメーション適用"
+      "アニメーション適用＆レイヤー長さ調整"
     );
 
     // ステータス表示エリア
@@ -99,20 +99,19 @@ function createUI(thisObj) {
     panel.animateShapesButton.onClick = function () {
       try {
         logger.log(
-          "全コンポジションにアニメーション適用ボタンがクリックされました"
+          "アニメーション適用＆レイヤー長さ調整ボタンがクリックされました"
         );
         panel.statusText.text =
-          "全コンポジションにアニメーションを適用しています...";
+          "アニメーション適用とレイヤー長さ調整を実行中...";
         var result = animateShapeLayers();
         if (result) {
-          panel.statusText.text = "アニメーションを適用しました";
+          panel.statusText.text =
+            "アニメーション適用とレイヤー長さ調整が完了しました";
         } else {
-          panel.statusText.text = "アニメーションの適用に失敗しました";
+          panel.statusText.text = "処理に失敗しました";
         }
       } catch (e) {
-        logger.log(
-          "アニメーション適用中にエラーが発生しました: " + e.toString()
-        );
+        logger.log("処理中にエラーが発生しました: " + e.toString());
         panel.statusText.text = "エラーが発生しました";
         alert("エラーが発生しました: " + e.toString());
       }
