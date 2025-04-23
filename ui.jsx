@@ -1,36 +1,31 @@
 // ui.jsx - ユーザーインターフェースを提供するモジュール
+
 function createUI(thisObj) {
   var logger = new Logger("UI");
-
   try {
     // パネルの初期化
     var panel =
       thisObj instanceof Panel
         ? thisObj
-        : new Window("palette", "JSON読み込み", [0, 0, 260, 400]);
-
+        : new Window("palette", "JSON読み込み", [0, 0, 260, 430]);
     // JSONを読み込むボタン
     panel.loadButton = panel.add("button", [10, 10, 250, 40], "JSONを読み込む");
-
     // オーディオファイルを追加するボタン
     panel.addAudioButton = panel.add(
       "button",
       [10, 50, 250, 80],
       "オーディオファイルを追加"
     );
-
     // 結果表示エリア
     panel.resultText = panel.add("edittext", [10, 90, 250, 240], "", {
       multiline: true,
       readonly: true,
       scrollable: true,
     });
-
     // セクション数表示エリア
     panel.sectionCountText = panel.add("statictext", [10, 250, 250, 290], "", {
       multiline: true,
     });
-
     // コンポジション作成ボタン
     panel.createCompButton = panel.add(
       "button",
@@ -39,8 +34,15 @@ function createUI(thisObj) {
     );
     panel.createCompButton.enabled = false;
 
+    // 図形アニメーション適用ボタン
+    panel.animateShapesButton = panel.add(
+      "button",
+      [10, 340, 250, 370],
+      "図形アニメーション適用"
+    );
+
     // ステータス表示エリア
-    panel.statusText = panel.add("statictext", [10, 340, 250, 360], "準備完了");
+    panel.statusText = panel.add("statictext", [10, 380, 250, 400], "準備完了");
 
     // パネルのリサイズ対応
     panel.onResizing = panel.onResize = function () {
@@ -93,9 +95,28 @@ function createUI(thisObj) {
       }
     };
 
+    // 図形アニメーション適用ボタンのクリックイベント
+    panel.animateShapesButton.onClick = function () {
+      try {
+        logger.log("図形アニメーション適用ボタンがクリックされました");
+        panel.statusText.text = "図形にアニメーションを適用しています...";
+        var result = animateShapeLayers();
+        if (result) {
+          panel.statusText.text = "図形アニメーションを適用しました";
+        } else {
+          panel.statusText.text = "図形アニメーションの適用に失敗しました";
+        }
+      } catch (e) {
+        logger.log(
+          "図形アニメーション適用中にエラーが発生しました: " + e.toString()
+        );
+        panel.statusText.text = "エラーが発生しました";
+        alert("エラーが発生しました: " + e.toString());
+      }
+    };
+
     // パネルのレイアウトを適用
     panel.layout.layout(true);
-
     logger.log("UIを作成しました");
     return panel;
   } catch (e) {

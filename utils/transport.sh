@@ -37,6 +37,7 @@ FILES_TO_INSTALL=(
   "mainCompCreator.jsx"
   "compUtils.jsx"
   "audioHandler.jsx"
+  "shapeAnimator.jsx"
 )
 
 # ファイルが存在するか確認

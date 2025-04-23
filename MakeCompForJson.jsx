@@ -1,4 +1,5 @@
 // MakeCompForJson.jsx - メインスクリプトファイル
+
 var scriptFolder = new File($.fileName).parent.absoluteURI;
 
 // 各ファイルを読み込む
@@ -9,6 +10,7 @@ $.evalFile(scriptFolder + "/compUtils.jsx");
 $.evalFile(scriptFolder + "/slideCompCreator.jsx");
 $.evalFile(scriptFolder + "/mainCompCreator.jsx");
 $.evalFile(scriptFolder + "/compCreator.jsx");
+$.evalFile(scriptFolder + "/shapeAnimator.jsx");
 $.evalFile(scriptFolder + "/ui.jsx");
 
 // グローバルロガーインスタンスを作成
