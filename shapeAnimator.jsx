@@ -111,11 +111,12 @@ function extendLayersToCompDuration(comp) {
   var logger = new Logger("ShapeAnimator");
   var layersExtended = 0;
 
+  logger.log("コンポジション「" + comp.name + "」のレイヤー長さを調整します");
+
   for (var i = 1; i <= comp.numLayers; i++) {
     var layer = comp.layer(i);
 
     // オーディオレイヤー以外のレイヤーを処理
-    // AudioItemは未定義なので、hasAudioプロパティを使用
     if (!layer.hasAudio || (layer.hasVideo && layer.hasAudio)) {
       // レイヤーのout点をコンポジションの長さに合わせる
       var currentOutPoint = layer.outPoint;
@@ -124,11 +125,59 @@ function extendLayersToCompDuration(comp) {
         layer.outPoint = comp.duration;
         layersExtended++;
       }
+
+      // サブコンポジションの場合は、そのコンポジション内のレイヤーも処理
+      if (layer.source instanceof CompItem) {
+        var subComp = layer.source;
+        var subLayersExtended = extendLayersInSubComp(subComp);
+        layersExtended += subLayersExtended;
+      }
     }
   }
 
   logger.log(
     "スライド「" +
+      comp.name +
+      "」の" +
+      layersExtended +
+      "個のレイヤー長さを調整しました。"
+  );
+  return layersExtended;
+}
+
+// サブコンポジション内のレイヤーの長さを調整する関数
+function extendLayersInSubComp(comp) {
+  var logger = new Logger("ShapeAnimator");
+  var layersExtended = 0;
+
+  logger.log(
+    "サブコンポジション「" + comp.name + "」のレイヤー長さを調整します"
+  );
+
+  for (var i = 1; i <= comp.numLayers; i++) {
+    var layer = comp.layer(i);
+
+    // オーディオレイヤー以外のレイヤーを処理
+    if (!layer.hasAudio || (layer.hasVideo && layer.hasAudio)) {
+      // レイヤーのout点をコンポジションの長さに合わせる
+      var currentOutPoint = layer.outPoint;
+
+      if (currentOutPoint < comp.duration) {
+        layer.outPoint = comp.duration;
+        layersExtended++;
+      }
+
+      // さらにネストされたサブコンポジションがあれば再帰的に処理
+      if (layer.source instanceof CompItem) {
+        var nestedComp = layer.source;
+        var nestedLayersExtended = extendLayersInSubComp(nestedComp);
+        layersExtended += nestedLayersExtended;
+      }
+    }
+  }
+
+  logger.log(
+    "サブコンポジション「" +
       comp.name +
       "」の" +
       layersExtended +
