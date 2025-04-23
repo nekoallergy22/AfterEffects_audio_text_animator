@@ -38,7 +38,7 @@ function createUI(thisObj) {
     panel.animateShapesButton = panel.add(
       "button",
       [10, 340, 250, 370],
-      "図形アニメーション適用"
+      "全コンポジションにアニメーション適用"
     );
 
     // ステータス表示エリア
@@ -95,20 +95,23 @@ function createUI(thisObj) {
       }
     };
 
-    // 図形アニメーション適用ボタンのクリックイベント
+    // アニメーション適用ボタンのクリックイベント
     panel.animateShapesButton.onClick = function () {
       try {
-        logger.log("図形アニメーション適用ボタンがクリックされました");
-        panel.statusText.text = "図形にアニメーションを適用しています...";
+        logger.log(
+          "全コンポジションにアニメーション適用ボタンがクリックされました"
+        );
+        panel.statusText.text =
+          "全コンポジションにアニメーションを適用しています...";
         var result = animateShapeLayers();
         if (result) {
-          panel.statusText.text = "図形アニメーションを適用しました";
+          panel.statusText.text = "アニメーションを適用しました";
         } else {
-          panel.statusText.text = "図形アニメーションの適用に失敗しました";
+          panel.statusText.text = "アニメーションの適用に失敗しました";
         }
       } catch (e) {
         logger.log(
-          "図形アニメーション適用中にエラーが発生しました: " + e.toString()
+          "アニメーション適用中にエラーが発生しました: " + e.toString()
         );
         panel.statusText.text = "エラーが発生しました";
         alert("エラーが発生しました: " + e.toString());
