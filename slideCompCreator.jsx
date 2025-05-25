@@ -9,6 +9,7 @@ function createSlideCompositions(slideDataArray, parentFolder) {
   for (var i = 0; i < slideDataArray.length; i++) {
     var slideData = slideDataArray[i];
     var slideName = slideData.name;
+    // var duration = (slideData.duration + slideData.margin) / 1000;
     var duration = slideData.duration / 1000;
 
     // 合計時間に加算
