@@ -243,7 +243,7 @@ function applyScaleAnimation(layer, startTime, frameRate) {
   scale.setValueAtTime(startTime, [0, 0]);
 
   // 10フレーム後の時間を計算
-  var endTime = startTime + 10 / frameRate;
+  var endTime = startTime + 20 / frameRate;
 
   // 10フレーム後にキーフレームを追加（現在のスケール値）
   scale.setValueAtTime(endTime, currentScale);
@@ -263,7 +263,7 @@ function applyOpacityAnimation(layer, startTime, frameRate) {
   opacity.setValueAtTime(startTime, 0);
 
   // 10フレーム後の時間を計算
-  var endTime = startTime + 10 / frameRate;
+  var endTime = startTime + 20 / frameRate;
 
   // 10フレーム後にキーフレームを追加（現在の不透明度値）
   opacity.setValueAtTime(endTime, currentOpacity);
@@ -301,4 +301,17 @@ function applyEasing(property) {
       );
     }
   }
+}
+
+// サブコンポジションレイヤーにin/out不透明度トランジションを適用する関数
+function applyInOutOpacityTransition(layer, frameRate) {
+  var inStart = layer.startTime;
+  var inEnd = inStart + 20 / frameRate;
+  var outEnd = layer.outPoint;
+  var outStart = outEnd - 20 / frameRate;
+  var opacity = layer.property("Transform").property("Opacity");
+  opacity.setValueAtTime(inStart, 0);
+  opacity.setValueAtTime(inEnd, 100);
+  opacity.setValueAtTime(outStart, 100);
+  opacity.setValueAtTime(outEnd, 0);
 }

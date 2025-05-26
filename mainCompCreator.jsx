@@ -5,7 +5,8 @@ function createMainComposition(name, slideItems, totalDuration) {
   var logger = new Logger("MainCompCreator");
 
   // バッファー時間（10秒）を加算
-  var mainCompDuration = totalDuration + 10;
+  // var mainCompDuration = totalDuration + 10;
+  var mainCompDuration = totalDuration + 20;
 
   // メインコンポジションを作成または更新
   var mainComp = createOrUpdateMainComp(name, mainCompDuration);
@@ -48,12 +49,27 @@ function arrangeSlideItemsInMainComp(mainComp, slideItems) {
   var logger = new Logger("MainCompCreator");
 
   try {
-    // 新しいレイヤーを追加
+    // baseコンポ追加（アニメーション適用対象外）
+    var baseComp = findCompByName("base");
+    if (baseComp) {
+      var baseLayer = mainComp.layers.add(baseComp);
+      baseLayer.moveToEnd();
+    }
+
+    // slideItemsのレイヤー追加＆アニメーション適用（1回だけ）
     var currentTime = 0;
     for (var j = 0; j < slideItems.length; j++) {
       var layer = mainComp.layers.add(slideItems[j]);
       layer.startTime = currentTime;
+      applyInOutOpacityTransition(layer, mainComp.frameRate); // ここでアニメーション適用
       currentTime += slideItems[j].duration;
+    }
+
+    // endコンポ追加（slideItemsの後に追加）
+    var endComp = findCompByName("end");
+    if (endComp) {
+      var endLayer = mainComp.layers.add(endComp);
+      endLayer.startTime = currentTime;
     }
 
     logger.log("スライドアイテムをメインコンポジションに配置しました");
